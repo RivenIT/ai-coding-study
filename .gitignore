@@ -13,6 +13,8 @@ target/
 .springBeans
 .sts4-cache
 
+tmp
+
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -55,3 +57,26 @@ build/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Local development runtime files
+.codex-*.err
+*.pid
+*.pid.lock
+
+# Frontend dependencies, build output, and test artifacts
+ai-coding-front/node_modules/
+ai-coding-front/dist/
+ai-coding-front/.vite/
+ai-coding-front/coverage/
+*.tsbuildinfo
+
+# Local environment configuration and OS metadata
+.env
+.env.*
+!.env.example
+/src/main/resources/application-local.yml
+/src/main/resources/application-local.yaml
+/config/application-local.yml
+/config/application-local.yaml
+.DS_Store
+Thumbs.db
