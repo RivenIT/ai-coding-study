@@ -20,25 +20,47 @@
 
       <!-- 右侧：用户操作区 -->
       <div class="header-right">
-        <a-button type="primary" class="login-button" @click="handleLogin">
-          <template #icon>
-            <UserOutlined />
+        <a-space v-if="!userStore.loginUser" :size="8">
+          <a-button type="text" @click="router.push('/register')">注册</a-button>
+          <a-button type="primary" class="login-button" @click="router.push('/login')">
+            <template #icon><UserOutlined /></template>
+            登录
+          </a-button>
+        </a-space>
+        <a-dropdown v-else placement="bottomRight">
+          <a class="user-trigger" @click.prevent>
+            <a-avatar :src="userStore.loginUser.userAvatar || undefined">
+              <template #icon><UserOutlined /></template>
+            </a-avatar>
+            <span class="user-name">{{ userStore.loginUser.userName || userStore.loginUser.userAccount }}</span>
+            <a-tag :color="userStore.isAdmin ? 'orange' : 'blue'">{{ userStore.isAdmin ? '管理员' : '普通用户' }}</a-tag>
+            <DownOutlined />
+          </a>
+          <template #overlay>
+            <a-menu @click="handleUserMenuClick">
+              <a-menu-item v-if="userStore.isAdmin" key="manage">用户管理</a-menu-item>
+              <a-menu-divider v-if="userStore.isAdmin" />
+              <a-menu-item key="logout">退出登录</a-menu-item>
+            </a-menu>
           </template>
-          登录
-        </a-button>
+        </a-dropdown>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { UserOutlined } from '@ant-design/icons-vue'
+import { DownOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { ApiError } from '@/services/http'
+import { useUserStore } from '@/stores/user'
+import { message, Modal } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 
 // 菜单配置
 const menuItems: MenuProps['items'] = [
@@ -62,10 +84,36 @@ const handleMenuClick = ({ key }: { key: string }) => {
   router.push(key)
 }
 
-// 登录按钮点击事件
-const handleLogin = () => {
-  console.log('登录按钮点击')
-  // TODO: 实现登录逻辑
+async function logout() {
+  try {
+    await userStore.logout()
+    message.success('已退出登录')
+    await router.push('/')
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 40100) {
+      userStore.clearLoginUser()
+      await router.push('/')
+      return
+    }
+    message.error(error instanceof Error ? error.message : '退出登录失败')
+  }
+}
+
+function handleUserMenuClick({ key }: { key: string }) {
+  if (key === 'manage') {
+    void router.push('/user/manage')
+    return
+  }
+  if (key === 'logout') {
+    Modal.confirm({
+      title: '确认退出登录？',
+      content: '退出后需要重新登录才能访问管理功能。',
+      okText: '确认退出',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: logout,
+    })
+  }
 }
 </script>
 
@@ -191,6 +239,21 @@ const handleLogin = () => {
 .login-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(24, 144, 255, 0.3);
+}
+
+.user-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.user-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 响应式布局 */

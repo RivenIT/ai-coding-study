@@ -4,10 +4,10 @@
       <h1 class="hero-title">欢迎来到 AI 编程学习平台</h1>
       <p class="hero-subtitle">探索人工智能与编程的无限可能</p>
       <div class="hero-actions">
-        <a-button type="primary" size="large" class="action-button">
+        <a-button type="primary" size="large" class="action-button" @click="router.push('/register')">
           开始学习
         </a-button>
-        <a-button size="large" class="action-button-outline">
+        <a-button size="large" class="action-button-outline" @click="router.push('/about')">
           了解更多
         </a-button>
       </div>
@@ -34,7 +34,9 @@
 </template>
 
 <script setup lang="ts">
-// 首页逻辑
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 </script>
 
 <style scoped>

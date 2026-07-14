@@ -4,7 +4,7 @@ package com.zlj.aicodingstudy.common;
 import com.zlj.aicodingstudy.exception.ErrorCode;
 
 /**
- * 快速构造响应结果的工具类
+ * 快速构造响应结果的工具类,简化响应对象创建
  */
 public class ResultUtils {
 
