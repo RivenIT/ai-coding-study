@@ -33,7 +33,7 @@ public class UserController {
      * @param userRegisterRequest 用户注册请求体
      * @return 新用户id
      */
-    @RequestMapping("/register")
+    @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         //1.校验参数
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
@@ -51,7 +51,7 @@ public class UserController {
      * @param request          请求对象
      * @return 脱敏后的用户登录信息
      */
-    @RequestMapping("/login")
+    @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest,
                                                HttpServletRequest request) {
         ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);//参数校验
