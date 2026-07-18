@@ -62,6 +62,7 @@ hs_err_pid*
 .codex-*.err
 *.pid
 *.pid.lock
+.superpowers/
 
 # Frontend dependencies, build output, and test artifacts
 ai-coding-front/node_modules/
