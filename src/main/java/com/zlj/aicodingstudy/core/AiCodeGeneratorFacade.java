@@ -45,10 +45,12 @@ public class AiCodeGeneratorFacade {
      *
      * @param userMessage 用户输入的需求描述或提示词
      * @param codeGenTypeEnum 目标代码的生成类型，用于决定模型调用方式和保存策略
+     * @param appId 应用ID
+     *
      * @return 本次生成内容成功保存后的目录
      * @throws BusinessException 当生成类型为空或当前类型没有对应的处理逻辑时抛出
      */
-    public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum) {
+    public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum,Long appId) {
         // 在进入 switch 前校验，避免空值导致分发逻辑出现不可预期的异常。
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
@@ -57,12 +59,12 @@ public class AiCodeGeneratorFacade {
             case HTML -> {
                 // HTML 类型的模型结果可直接交由对应保存器落盘。
                 HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode(userMessage);
-                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.HTML);
+                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.HTML,appId);
             }
             case MULTI_FILE -> {
                 // 多文件类型包含多个文件的结构化信息，由多文件保存器分别创建文件。
                 MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode(userMessage);
-                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.MULTI_FILE);
+                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.MULTI_FILE,appId);
             }
             default -> {
                 // 枚举扩展新类型后，若未在此处显式实现，返回清晰的业务异常而非静默失败。
@@ -81,10 +83,12 @@ public class AiCodeGeneratorFacade {
      *
      * @param userMessage 用户输入的需求描述或提示词
      * @param codeGenTypeEnum 目标代码的生成类型，用于决定流式模型调用和后续保存策略
+     * @param appId 应用ID
      * @return 向调用方持续输出模型代码片段的响应流
      * @throws BusinessException 当生成类型为空或当前类型没有对应的处理逻辑时抛出
      */
-    public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum) {
+    public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum,
+                                                  Long appId) {
         // 与同步入口保持一致的前置校验，确保后续分发始终基于有效类型。
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
@@ -93,12 +97,12 @@ public class AiCodeGeneratorFacade {
             case HTML -> {
                 // 获取 HTML 的流式输出，并附加统一的收集、解析和保存处理。
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
-                yield processCodeStream(codeStream, CodeGenTypeEnum.HTML);
+                yield processCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
             }
             case MULTI_FILE -> {
                 // 获取多文件代码的流式输出，并附加统一的收集、解析和保存处理。
                 Flux<String> codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
-                yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE);
+                yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
             default -> {
                 // 防止未来新增枚举类型时被误当作已支持的生成方式。
@@ -121,9 +125,10 @@ public class AiCodeGeneratorFacade {
      *
      * @param codeStream 上游模型返回的代码片段流
      * @param codeGenType 当前片段对应的代码生成类型，用于选择解析器和保存器
+     * @param appId 应用ID
      * @return 保留原始代码片段输出、且在完成时执行保存操作的流
      */
-    private Flux<String> processCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenType) {
+    private Flux<String> processCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenType, Long appId) {
         // StringBuilder 仅服务于当前一次方法调用，用来还原被拆分发送的完整生成结果。
         StringBuilder codeBuilder = new StringBuilder();
         return codeStream.doOnNext(chunk -> {
@@ -136,7 +141,7 @@ public class AiCodeGeneratorFacade {
                 // 执行器根据类型选择对应解析器，将文本转换为保存器所需的结果对象。
                 Object parsedResult = CodeParserExecutor.executeParser(completeCode, codeGenType);
                 // 执行器再根据类型选择保存器，创建目录和文件并返回保存位置。
-                File savedDir = CodeFileSaverExecutor.executeSaver(parsedResult, codeGenType);
+                File savedDir = CodeFileSaverExecutor.executeSaver(parsedResult, codeGenType, appId);
                 log.info("保存成功，路径为：" + savedDir.getAbsolutePath());
             } catch (Exception e) {
                 // 流已经输出完成，保存失败仅记录日志，避免改变已完成流的对外语义。
