@@ -5,6 +5,7 @@
     :mask-closable="false"
     :confirm-loading="submitting"
     :ok-text="isEdit ? '保存修改' : '创建用户'"
+    cancel-text="取消"
     width="560px"
     @cancel="close"
     @ok="submit"
@@ -47,7 +48,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { addUser, updateUser } from '@/services/user'
 import type { UserRole, UserVO } from '@/types/user'
-import { validateManagedUser } from '@/utils/user'
+import { buildUserUpdateRequest, validateManagedUser } from '@/utils/user'
 
 const props = defineProps<{ open: boolean; user: UserVO | null }>()
 const emit = defineEmits<{ 'update:open': [value: boolean]; success: [] }>()
@@ -104,10 +105,10 @@ async function submit() {
   if (Object.keys(validationErrors).length > 0) return
 
   submitting.value = true
-  submitError.value = ''
+    submitError.value = ''
   try {
     if (props.user) {
-      await updateUser({ id: props.user.id, ...values })
+      await updateUser(buildUserUpdateRequest(props.user.id, values))
       message.success('用户信息已更新')
     } else {
       await addUser(values)
@@ -124,5 +125,5 @@ async function submit() {
 </script>
 
 <style scoped>
-.password-notice, .submit-error { margin-bottom: 18px; }
+.password-notice, .submit-error { margin-bottom: var(--space-4); }
 </style>

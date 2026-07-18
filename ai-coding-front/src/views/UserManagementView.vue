@@ -36,7 +36,7 @@
           <a-avatar :src="record.userAvatar || undefined"><template #icon><UserOutlined /></template></a-avatar>
         </template>
         <template v-else-if="column.key === 'profile'">
-          <a-typography-paragraph class="ellipsis" :ellipsis="{ tooltip: record.userProfile || '-' }">{{ record.userProfile || '-' }}</a-typography-paragraph>
+          <a-typography-paragraph class="ellipsis" :ellipsis="{ tooltip: record.userProfile || '-' }" :content="record.userProfile || '-'" />
         </template>
         <template v-else-if="column.key === 'role'">
           <a-tag :color="record.userRole === 'admin' ? 'orange' : 'blue'">{{ record.userRole === 'admin' ? '管理员' : '普通用户' }}</a-tag>
@@ -54,7 +54,7 @@
 
     <div class="pagination-bar">
       <span>共 {{ total }} 条</span>
-      <a-pagination :current="query.pageNum" :page-size="query.pageSize" :total="total" :page-size-options="['10', '20', '50', '100']" show-size-changer show-quick-jumper @change="changePage" @show-size-change="changePageSize" />
+      <a-pagination :current="query.pageNum" :page-size="query.pageSize" :total="total" :page-size-options="['10', '20', '50', '100']" show-size-changer show-quick-jumper @change="changePage" />
     </div>
 
     <UserFormModal v-model:open="formOpen" :user="editingUser" @success="handleFormSuccess" />
@@ -77,6 +77,7 @@ const total = ref(0)
 const loading = ref(false)
 const idError = ref('')
 const formOpen = ref(false)
+let loadSeq = 0
 const detailOpen = ref(false)
 const editingUser = ref<UserVO | null>(null)
 const selectedUser = ref<UserVO | null>(null)
@@ -109,15 +110,18 @@ async function loadUsers() {
     return
   }
   idError.value = ''
+  const requestId = ++loadSeq
   loading.value = true
   try {
     const page = await listUsers(getRequestQuery())
+    if (requestId !== loadSeq) return
     users.value = page.records
     total.value = page.totalRow
   } catch (error) {
+    if (requestId !== loadSeq) return
     message.error(error instanceof Error ? error.message : '加载用户列表失败')
   } finally {
-    loading.value = false
+    if (requestId === loadSeq) loading.value = false
   }
 }
 
@@ -139,14 +143,10 @@ function reset() {
   void loadUsers()
 }
 
-function changePage(page: number) {
-  query.pageNum = page
-  void loadUsers()
-}
-
-function changePageSize(_: number, pageSize: number) {
-  query.pageNum = 1
+function changePage(page: number, pageSize: number) {
+  const sizeChanged = pageSize !== query.pageSize
   query.pageSize = pageSize
+  query.pageNum = sizeChanged ? 1 : page
   void loadUsers()
 }
 
@@ -193,10 +193,15 @@ function confirmDelete(user: UserVO) {
     cancelText: '取消',
     okButtonProps: { danger: true },
     onOk: async () => {
-      await deleteUser(user.id)
-      if (users.value.length === 1 && query.pageNum && query.pageNum > 1) query.pageNum -= 1
-      message.success('删除成功')
-      await loadUsers()
+      try {
+        await deleteUser(user.id)
+        if (users.value.length === 1 && query.pageNum && query.pageNum > 1) query.pageNum -= 1
+        message.success('删除成功')
+        await loadUsers()
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '删除用户失败')
+        throw error
+      }
     },
   })
 }
@@ -217,15 +222,15 @@ onMounted(() => void loadUsers())
 </script>
 
 <style scoped>
-.management-page { display: grid; gap: 20px; }
-.page-header { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
-.eyebrow { color: #1677ff; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; }
-.page-header h1 { color: #1e293b; font-size: 28px; margin: 4px 0; }
-.page-header p { color: #64748b; margin: 0; }
-.filter-bar { align-items: start; background: #fff; border: 1px solid #e2e8f0; padding: 16px; }
-.filter-bar :deep(.ant-form-item) { margin-bottom: 12px; }
-.user-table { overflow: hidden; background: #fff; border: 1px solid #e2e8f0; }
+.management-page { display: grid; gap: var(--space-6); }
+.page-header { display: flex; align-items: end; justify-content: space-between; gap: var(--space-6); padding-bottom: var(--space-5); border-bottom: 1px solid var(--color-rule); }
+.eyebrow { color: var(--color-accent-strong); font-size: 12px; font-weight: 800; letter-spacing: 0; }
+.page-header h1 { color: var(--color-ink); font-family: var(--font-display); font-size: 28px; margin: var(--space-1) 0; }
+.page-header p { color: var(--color-muted); margin: 0; }
+.filter-bar { align-items: start; padding: var(--space-4); border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-panel-raised); }
+.filter-bar :deep(.ant-form-item) { margin-bottom: var(--space-3); }
+.user-table { overflow: hidden; border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-panel); }
 .ellipsis { margin: 0; max-width: 200px; }
-.pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #64748b; }
+.pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); color: var(--color-muted); }
 @media (max-width: 720px) { .page-header, .pagination-bar { align-items: flex-start; flex-direction: column; } .page-header :deep(.ant-space) { width: 100%; } }
 </style>

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { buildUserCsv, isHttpUrl, isUserId, normalizeUserQuery, validateRegistration } from './user'
+import {
+  buildUserCsv,
+  buildUserUpdateRequest,
+  isHttpUrl,
+  isUserId,
+  normalizeUserQuery,
+  validateRegistration,
+} from './user'
 
 describe('normalizeUserQuery', () => {
   it('trims filters and removes empty values', () => {
@@ -55,5 +62,25 @@ describe('identity validation', () => {
     expect(isUserId('123456789')).toBe(true)
     expect(isHttpUrl('https://example.com/avatar.png')).toBe(true)
     expect(isHttpUrl('javascript:alert(1)')).toBe(false)
+  })
+})
+
+describe('managed user update payloads', () => {
+  it('omits the read-only account field from update requests', () => {
+    expect(
+      buildUserUpdateRequest('42', {
+        userAccount: 'readonly-account',
+        userName: 'Alice',
+        userAvatar: undefined,
+        userProfile: 'Profile',
+        userRole: 'user',
+      }),
+    ).toEqual({
+      id: '42',
+      userName: 'Alice',
+      userAvatar: undefined,
+      userProfile: 'Profile',
+      userRole: 'user',
+    })
   })
 })

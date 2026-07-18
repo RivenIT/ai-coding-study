@@ -2,6 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import HomeView from '../views/HomeView.vue'
 
+declare module 'vue-router' {
+  interface RouteMeta {
+    guestOnly?: boolean
+    requiresAuth?: boolean
+    requiresAdmin?: boolean
+    immersive?: boolean
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -34,7 +43,25 @@ const router = createRouter({
       path: '/user/manage',
       name: 'user-management',
       component: () => import('../views/UserManagementView.vue'),
-      meta: { requiresAdmin: true },
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/app/:id/chat',
+      name: 'app-chat',
+      component: () => import('../views/AppChatView.vue'),
+      meta: { requiresAuth: true, immersive: true },
+    },
+    {
+      path: '/app/:id/edit',
+      name: 'app-edit',
+      component: () => import('../views/AppEditView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/app/manage',
+      name: 'app-management',
+      component: () => import('../views/AppManagementView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
   ],
 })
@@ -50,8 +77,12 @@ router.beforeEach(async (to) => {
     }
   }
 
+  if (to.meta.requiresAuth && !userStore.loginUser) {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
   if (to.meta.requiresAdmin && !userStore.isAdmin) {
-    return userStore.loginUser ? '/' : { path: '/login', query: { redirect: to.fullPath } }
+    return '/'
   }
 
   if (to.meta.guestOnly && userStore.loginUser) {

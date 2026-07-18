@@ -1,4 +1,4 @@
-import type { UserQueryInput, UserQueryRequest, UserVO } from '@/types/user'
+import type { UserQueryInput, UserQueryRequest, UserUpdateRequest, UserVO } from '@/types/user'
 
 const PAGE_SIZES = [10, 20, 50, 100] as const
 
@@ -32,6 +32,21 @@ export function normalizeUserQuery(input: UserQueryInput): UserQueryRequest {
     ...(trimValue(input.userName) ? { userName: trimValue(input.userName) } : {}),
     ...(trimValue(input.userProfile) ? { userProfile: trimValue(input.userProfile) } : {}),
     ...(input.userRole ? { userRole: input.userRole } : {}),
+  }
+}
+
+export function buildUserUpdateRequest(
+  id: string,
+  values: Pick<UserUpdateRequest, 'userName' | 'userAvatar' | 'userProfile' | 'userRole'> & {
+    userAccount?: string
+  },
+): UserUpdateRequest {
+  return {
+    id,
+    userName: values.userName,
+    userAvatar: values.userAvatar,
+    userProfile: values.userProfile,
+    userRole: values.userRole,
   }
 }
 

@@ -1,5 +1,46 @@
 import axios, { type AxiosRequestConfig } from 'axios'
+import JSONBig from 'json-bigint'
 import type { BaseResponse } from '@/types/user'
+
+const FALLBACK_API_BASE_URL = 'http://localhost:8081/api'
+
+interface LocationLike {
+  protocol: string
+  hostname: string
+}
+
+export function getDefaultApiBaseUrl(location?: LocationLike): string {
+  const browserLocation =
+    location ?? (typeof window === 'undefined' ? undefined : window.location)
+  const hostname = browserLocation?.hostname
+
+  if (!hostname) {
+    return FALLBACK_API_BASE_URL
+  }
+
+  const protocol = browserLocation.protocol === 'https:' ? 'https:' : 'http:'
+  const formattedHostname = hostname.includes(':') ? `[${hostname}]` : hostname
+
+  return `${protocol}//${formattedHostname}:8081/api`
+}
+
+const DEFAULT_API_BASE_URL = getDefaultApiBaseUrl()
+
+export function normalizeApiBaseUrl(value: string | undefined): string {
+  return value?.trim().replace(/\/+$/, '') || DEFAULT_API_BASE_URL
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL)
+
+const jsonBig = JSONBig({ storeAsString: true })
+
+export function parseApiResponse(data: unknown): unknown {
+  if (typeof data !== 'string' || !data.trim()) {
+    return data
+  }
+
+  return jsonBig.parse(data)
+}
 
 export class ApiError extends Error {
   constructor(
@@ -12,9 +53,10 @@ export class ApiError extends Error {
 }
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8081',
+  baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 15_000,
+  transformResponse: [parseApiResponse],
 })
 
 export async function request<T>(config: AxiosRequestConfig): Promise<T> {
