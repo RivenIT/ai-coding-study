@@ -9,26 +9,34 @@ export const useUserStore = defineStore('user', () => {
   const initialized = ref(false)
   const loading = ref(false)
   const isAdmin = computed(() => loginUser.value?.userRole === 'admin')
+  let inflightFetch: Promise<LoginUserVO | null> | null = null
 
   function clearLoginUser() {
     loginUser.value = null
   }
 
   async function fetchLoginUser(options: { silent?: boolean } = {}) {
+    if (inflightFetch) return inflightFetch
+
     loading.value = true
-    try {
-      loginUser.value = await userApi.getLoginUser()
-      return loginUser.value
-    } catch (error) {
-      if (options.silent && error instanceof ApiError && error.code === 40100) {
-        clearLoginUser()
-        return null
+    inflightFetch = (async () => {
+      try {
+        loginUser.value = await userApi.getLoginUser()
+        return loginUser.value
+      } catch (error) {
+        if (options.silent && error instanceof ApiError && error.code === 40100) {
+          clearLoginUser()
+          return null
+        }
+        throw error
+      } finally {
+        initialized.value = true
+        loading.value = false
+        inflightFetch = null
       }
-      throw error
-    } finally {
-      initialized.value = true
-      loading.value = false
-    }
+    })()
+
+    return inflightFetch
   }
 
   async function login(requestData: UserLoginRequest) {

@@ -37,7 +37,7 @@ function formatDate(value: string | null): string {
 </script>
 
 <style scoped>
-.user-summary { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
-.user-summary strong { color: #1e293b; font-size: 18px; }
-.user-summary p { color: #64748b; margin: 4px 0 0; }
+.user-summary { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-rule); }
+.user-summary strong { color: var(--color-ink); font-family: var(--font-display); font-size: 18px; }
+.user-summary p { color: var(--color-muted); margin: var(--space-1) 0 0; }
 </style>

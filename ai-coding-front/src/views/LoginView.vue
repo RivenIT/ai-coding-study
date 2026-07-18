@@ -9,7 +9,7 @@
 
       <a-alert v-if="submitError" class="submit-error" type="error" show-icon :message="submitError" />
 
-      <a-form layout="vertical" @finish="handleLogin">
+      <a-form :model="form" layout="vertical" @finish="handleLogin">
         <a-form-item label="账号" :validate-status="errors.userAccount ? 'error' : undefined" :help="errors.userAccount">
           <a-input v-model:value="form.userAccount" size="large" autocomplete="username" placeholder="请输入账号" @input="clearError('userAccount')">
             <template #prefix><UserOutlined /></template>
@@ -35,6 +35,7 @@ import { reactive, ref } from 'vue'
 import { LockOutlined, UserOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ApiError } from '@/services/http'
 import { useUserStore } from '@/stores/user'
 import { validateLogin } from '@/utils/user'
 
@@ -76,9 +77,15 @@ async function handleLogin() {
     await userStore.login(payload)
     message.success('登录成功')
     await router.replace(getRedirectPath())
-  } catch {
+  } catch (error) {
     form.userPassword = ''
-    submitError.value = '账号或密码错误，请重新输入'
+    if (error instanceof ApiError && (error.code === 40100 || error.code === 40000)) {
+      submitError.value = '账号或密码错误，请重新输入'
+    } else if (error instanceof Error && error.message) {
+      submitError.value = error.message
+    } else {
+      submitError.value = '登录失败，请稍后重试'
+    }
   } finally {
     submitting.value = false
   }
@@ -86,14 +93,14 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.auth-page { min-height: calc(100vh - 196px); display: grid; place-items: center; padding: 32px 0; }
-.auth-card { width: min(100%, 440px); padding: 20px; border-radius: 24px; box-shadow: 0 20px 50px rgba(15, 23, 42, .12); }
-.auth-heading { margin-bottom: 28px; text-align: center; }
-.eyebrow { color: #1677ff; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; }
-.auth-heading h1 { margin: 8px 0; color: #1e293b; font-size: 30px; }
-.auth-heading p, .auth-footer { color: #64748b; margin: 0; }
-.submit-error { margin-bottom: 16px; }
-.submit-button { height: 46px; border-radius: 12px; font-weight: 600; }
-.auth-footer { margin-top: 24px; text-align: center; }
-.auth-footer a { color: #1677ff; font-weight: 600; }
+.auth-page { min-height: calc(100vh - 220px); display: grid; place-items: center; padding: var(--space-12) 0; }
+.auth-card { width: min(100%, 440px); padding: var(--space-4); border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-panel-raised); box-shadow: var(--shadow-card); }
+.auth-heading { margin-bottom: var(--space-8); text-align: left; }
+.eyebrow { color: var(--color-accent-strong); font-size: 12px; font-weight: 800; letter-spacing: 0; }
+.auth-heading h1 { margin: var(--space-2) 0; color: var(--color-ink); font-family: var(--font-display); font-size: 30px; }
+.auth-heading p, .auth-footer { color: var(--color-muted); margin: 0; }
+.submit-error { margin-bottom: var(--space-4); }
+.submit-button { height: 44px; border-radius: var(--radius-sm); font-weight: 700; }
+.auth-footer { margin-top: var(--space-6); text-align: center; }
+.auth-footer a { color: var(--color-accent-strong); font-weight: 700; }
 </style>
