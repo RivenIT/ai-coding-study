@@ -19,8 +19,35 @@ describe('AppChatView critical bugs', () => {
   })
 
   it('gates autoStart and sendMessage with canOperate', () => {
-    expect(chat).toMatch(/shouldAutoStart[\s\S]*canOperate\.value/)
+    expect(chat).toMatch(/route\.query\.autoStart\s*===\s*['"]1['"]/)
+    expect(chat).toMatch(/consumeAutoStart/)
     expect(chat).toMatch(/function\s+sendMessage\s*\([^)]*\)\s*\{[\s\S]*!canOperate\.value/)
+  })
+
+  it('only consumes autoStart after history loads successfully and keeps retry for failures', () => {
+    const loadApp = chat.match(/async function loadApp\(\)[\s\S]*?\n}\n\nasync function consumeAutoStart/)
+    expect(loadApp?.[0]).toMatch(/if\s*\(\s*historyMessages\s*===\s*null\s*\)\s*return/)
+    expect(loadApp?.[0]).toMatch(
+      /if\s*\(\s*historyMessages\s*===\s*null\s*\)\s*return[\s\S]*if\s*\(\s*autoStartRequested\s*\)\s*await\s+consumeAutoStart\(\)/,
+    )
+    expect(chat).toMatch(/@click="loadApp"/)
+  })
+
+  it('recovers the composer when opening an EventSource throws synchronously', () => {
+    expect(chat).toMatch(/try\s*\{[\s\S]*connectAppGeneration/)
+    expect(chat).toMatch(/catch\s*\(error\)[\s\S]*generating\.value\s*=\s*false/)
+  })
+
+  it('keeps the existing preview visible while a follow-up generation is running', () => {
+    const sendMessage = chat.match(/function sendMessage\(content: string\)[\s\S]*?\n}\n\nfunction retryLastMessage/)
+
+    expect(sendMessage?.[0]).not.toMatch(/previewLoading\.value\s*=\s*true/)
+  })
+
+  it('does not enable deployment until a previewable generation has completed', () => {
+    expect(chat).toMatch(/const\s+canDeploy\s*=\s*computed\([\s\S]*showPreview\.value/)
+    expect(chat).toMatch(/const\s+canDeploy\s*=\s*computed\([\s\S]*previewUrl\.value/)
+    expect(chat).toMatch(/const\s+canDeploy\s*=\s*computed\([\s\S]*!generationError\.value/)
   })
 
   it('reloads when route app id changes on component reuse', () => {

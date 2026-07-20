@@ -11,7 +11,13 @@ function trimValue(value: string | undefined): string | undefined {
 
 function quoteCsvValue(value: string | null): string {
   const text = value ?? ''
-  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+export function getSafeRedirectPath(value: unknown): string {
+  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')
+    ? value
+    : '/'
 }
 
 export function normalizeUserQuery(input: UserQueryInput): UserQueryRequest {

@@ -68,6 +68,17 @@ public class AppController {
                             .data(jsonData)
                             .build();
                 })
+                .onErrorResume(error -> {
+                    Map<String, Object> errorData = Map.of(
+                            "error", true,
+                            "code", ErrorCode.SYSTEM_ERROR.getCode(),
+                            "message", "AI 生成失败，请稍后重试"
+                    );
+                    return Flux.just(ServerSentEvent.<String>builder()
+                            .event("business-error")
+                            .data(JSONUtil.toJsonStr(errorData))
+                            .build());
+                })
                 .concatWith(Mono.just(
                         // 发送结束事件
                         ServerSentEvent.<String>builder()

@@ -1,12 +1,19 @@
 package com.zlj.aicodingstudy.ai;
 
-
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.zlj.aicodingstudy.service.ChatHistoryService;
+import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Duration;
 
 /**
  * AI 代码生成服务工厂类
@@ -17,35 +24,73 @@ import org.springframework.context.annotation.Configuration;
  * @see AiCodeGeneratorService
  * @see AiServices
  */
-
+@Slf4j
 @Configuration(proxyBeanMethods = false)
 public class AiCodeGeneratorServiceFactory {
 
-    /** 同步聊天模型，用于非流式代码生成（如 generateHtmlCode、generateMultiFileCode） */
     @Resource
     private ChatModel chatModel;
 
-    /** 流式聊天模型，用于流式代码生成（如 generateHtmlCodeStream、generateMultiFileCodeStream） */
     @Resource
     private StreamingChatModel streamingChatModel;
 
+    @Resource
+    private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private RedisChatMemoryStore redisChatMemoryStore;
+
+
     /**
-     * 创建 AI 代码生成服务的 Spring Bean
-     * <p>使用 {@link AiServices#builder(Class)} 构建动态代理对象：
-     * <ul>
-     *     <li>{@code chatModel} —— 绑定同步聊天模型，支持返回结构化结果</li>
-     *     <li>{@code streamingChatModel} —— 绑定流式聊天模型，支持返回 {@code Flux<String>} 流式结果</li>
-     * </ul>
-     * 接口中通过 {@code @SystemMessage} 注解指定的提示词模板会在调用时自动加载。
-     *
-     * @return AiCodeGeneratorService 的动态代理实例
+     * AI 服务实例缓存
+     * 缓存策略：
+     * - 最大缓存 1000 个实例
+     * - 写入后 30 分钟过期
+     * - 访问后 10 分钟过期
+     */
+    private final Cache<Long, AiCodeGeneratorService> serviceCache = Caffeine.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(Duration.ofMinutes(30))
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .removalListener((key, value, cause) -> {
+                log.debug("AI 服务实例被移除，appId: {}, 原因: {}", key, cause);
+            })
+            .build();
+
+    /**
+     * 根据 appId 获取服务（带缓存）
+     */
+    public AiCodeGeneratorService getAiCodeGeneratorService(long appId) {
+        return serviceCache.get(appId, this::createAiCodeGeneratorService);
+    }
+
+    /**
+     * 创建新的 AI 服务实例
+     */
+    private AiCodeGeneratorService createAiCodeGeneratorService(long appId) {
+        log.info("为 appId: {} 创建新的 AI 服务实例", appId);
+        // 根据 appId 构建独立的对话记忆
+        MessageWindowChatMemory chatMemory = MessageWindowChatMemory
+                .builder()
+                .id(appId)
+                .chatMemoryStore(redisChatMemoryStore)
+                .maxMessages(20)
+                .build();
+        //从数据库中加载对话历史
+        chatHistoryService.loadChatHistoryToMemory(appId,chatMemory,20);
+        return AiServices.builder(AiCodeGeneratorService.class)
+                .chatModel(chatModel)
+                .streamingChatModel(streamingChatModel)
+                .chatMemory(chatMemory)
+                .build();
+    }
+
+    /**
+     * 默认提供一个 Bean
      */
     @Bean
     public AiCodeGeneratorService aiCodeGeneratorService() {
-        return AiServices.builder(AiCodeGeneratorService.class)
-                .chatModel(chatModel)                    // 设置同步聊天模型
-                .streamingChatModel(streamingChatModel)  // 设置流式聊天模型
-                .build();                                // 构建并返回代理对象
+        return getAiCodeGeneratorService(0L);
     }
 
 }

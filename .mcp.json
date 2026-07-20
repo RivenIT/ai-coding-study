@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "E:\\development_tools\\miniconda\\python.exe",
+      "args": [
+        "-m",
+        "code_review_graph",
+        "serve"
+      ],
+      "cwd": "D:\\Desktop\\Project\\ai-coding-study",
+      "type": "stdio"
+    }
+  }
+}

@@ -25,7 +25,10 @@
         </a-button>
       </a-form>
 
-      <p class="auth-footer">还没有账号？<router-link to="/register">立即注册</router-link></p>
+      <p class="auth-footer">
+        还没有账号？
+        <router-link :to="{ path: '/register', query: getRedirectQuery() }">立即注册</router-link>
+      </p>
     </a-card>
   </section>
 </template>
@@ -37,7 +40,7 @@ import { message } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '@/services/http'
 import { useUserStore } from '@/stores/user'
-import { validateLogin } from '@/utils/user'
+import { getSafeRedirectPath, validateLogin } from '@/utils/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,8 +64,12 @@ function replaceErrors(nextErrors: Record<string, string>) {
 }
 
 function getRedirectPath(): string {
-  const redirect = route.query.redirect
-  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+  return getSafeRedirectPath(route.query.redirect)
+}
+
+function getRedirectQuery(): Record<string, string> {
+  const redirect = getRedirectPath()
+  return redirect === '/' ? {} : { redirect }
 }
 
 async function handleLogin() {

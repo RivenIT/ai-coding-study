@@ -1,4 +1,4 @@
-import { request } from '@/services/http'
+import { request, requestSuccess } from '@/services/http'
 import type {
   LoginUserVO,
   PageResult,
@@ -42,8 +42,8 @@ export async function getLoginUser(): Promise<LoginUserVO> {
   return normalizeUser<LoginUserVO>(user)
 }
 
-export function logout(): Promise<boolean> {
-  return request<boolean>({ method: 'POST', url: '/user/logout' })
+export function logout(): Promise<true> {
+  return requestSuccess({ method: 'POST', url: '/user/logout' }, '退出登录失败')
 }
 
 export async function addUser(requestData: UserAddRequest): Promise<string> {
@@ -51,12 +51,12 @@ export async function addUser(requestData: UserAddRequest): Promise<string> {
   return String(id)
 }
 
-export function updateUser(requestData: UserUpdateRequest): Promise<boolean> {
-  return request<boolean>({ method: 'POST', url: '/user/update', data: requestData })
+export function updateUser(requestData: UserUpdateRequest): Promise<true> {
+  return requestSuccess({ method: 'POST', url: '/user/update', data: requestData }, '更新用户失败')
 }
 
-export function deleteUser(id: string): Promise<boolean> {
-  return request<boolean>({ method: 'POST', url: '/user/delete', data: { id } })
+export function deleteUser(id: string): Promise<true> {
+  return requestSuccess({ method: 'POST', url: '/user/delete', data: { id } }, '删除用户失败')
 }
 
 export async function listUsers(query: UserQueryRequest): Promise<PageResult<UserVO>> {

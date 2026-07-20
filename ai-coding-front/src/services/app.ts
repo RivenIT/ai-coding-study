@@ -1,4 +1,4 @@
-import { request } from '@/services/http'
+import { request, requestSuccess } from '@/services/http'
 import type {
   AppAddRequest,
   AppAdminUpdateRequest,
@@ -64,20 +64,20 @@ export async function getAppByAdmin(id: string): Promise<AppVO> {
   return normalizeApp(app)
 }
 
-export function updateApp(requestData: AppUpdateRequest): Promise<boolean> {
-  return request<boolean>({ method: 'POST', url: '/app/update', data: requestData })
+export function updateApp(requestData: AppUpdateRequest): Promise<true> {
+  return requestSuccess({ method: 'POST', url: '/app/update', data: requestData }, '保存应用失败')
 }
 
-export function updateAppByAdmin(requestData: AppAdminUpdateRequest): Promise<boolean> {
-  return request<boolean>({ method: 'POST', url: '/app/admin/update', data: requestData })
+export function updateAppByAdmin(requestData: AppAdminUpdateRequest): Promise<true> {
+  return requestSuccess({ method: 'POST', url: '/app/admin/update', data: requestData }, '保存应用失败')
 }
 
-export function deleteApp(id: string): Promise<boolean> {
-  return request<boolean>({ method: 'POST', url: '/app/delete', data: { id } })
+export function deleteApp(id: string): Promise<true> {
+  return requestSuccess({ method: 'POST', url: '/app/delete', data: { id } }, '删除应用失败')
 }
 
-export function deleteAppByAdmin(id: string): Promise<boolean> {
-  return request<boolean>({ method: 'POST', url: '/app/admin/delete', data: { id } })
+export function deleteAppByAdmin(id: string): Promise<true> {
+  return requestSuccess({ method: 'POST', url: '/app/admin/delete', data: { id } }, '删除应用失败')
 }
 
 export async function deployApp(appId: string): Promise<string> {

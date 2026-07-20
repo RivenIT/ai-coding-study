@@ -26,8 +26,19 @@ export function getDefaultApiBaseUrl(location?: LocationLike): string {
 
 const DEFAULT_API_BASE_URL = getDefaultApiBaseUrl()
 
-export function normalizeApiBaseUrl(value: string | undefined): string {
-  return value?.trim().replace(/\/+$/, '') || DEFAULT_API_BASE_URL
+export function normalizeApiBaseUrl(value: string | undefined, origin?: string): string {
+  const candidate = value?.trim().replace(/\/+$/, '')
+  if (!candidate) return DEFAULT_API_BASE_URL
+
+  const resolvedOrigin =
+    origin ?? (typeof window === 'undefined' ? undefined : window.location.origin)
+  if (!resolvedOrigin || !candidate.startsWith('/')) return candidate
+
+  try {
+    return new URL(candidate, resolvedOrigin).toString().replace(/\/+$/, '')
+  } catch {
+    return candidate
+  }
 }
 
 export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL)
@@ -50,6 +61,11 @@ export class ApiError extends Error {
     super(message)
     this.name = 'ApiError'
   }
+}
+
+/** 仅会话失效（未登录）应清登录态并跳登录页；禁止访问/无权限不算会话过期。 */
+export function isAuthenticationError(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.code === 40100
 }
 
 const http = axios.create({
@@ -81,4 +97,17 @@ export async function request<T>(config: AxiosRequestConfig): Promise<T> {
 
     throw new ApiError(50000, '系统异常，请稍后重试')
   }
+}
+
+export async function requestSuccess(
+  config: AxiosRequestConfig,
+  fallbackMessage: string,
+): Promise<true> {
+  const success = await request<boolean>(config)
+  return assertMutationSuccess(success, fallbackMessage)
+}
+
+export function assertMutationSuccess(success: boolean, fallbackMessage: string): true {
+  if (success !== true) throw new Error(fallbackMessage)
+  return true
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildUserCsv,
   buildUserUpdateRequest,
+  getSafeRedirectPath,
   isHttpUrl,
   isUserId,
   normalizeUserQuery,
@@ -43,6 +44,16 @@ describe('buildUserCsv', () => {
 
     expect(csv).toContain('"A, ""B"""')
     expect(csv).toContain('"first\nline"')
+  })
+})
+
+describe('safe redirects', () => {
+  it('rejects protocol-relative and backslash open redirects', () => {
+    expect(getSafeRedirectPath('/app/1/chat')).toBe('/app/1/chat')
+    expect(getSafeRedirectPath('//evil.example')).toBe('/')
+    expect(getSafeRedirectPath('/\\evil.example')).toBe('/')
+    expect(getSafeRedirectPath('https://evil.example')).toBe('/')
+    expect(getSafeRedirectPath(undefined)).toBe('/')
   })
 })
 

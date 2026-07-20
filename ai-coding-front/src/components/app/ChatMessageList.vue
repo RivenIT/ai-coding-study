@@ -26,19 +26,43 @@ import type { ChatMessage } from '@/types/app'
 
 const props = defineProps<{
   messages: ChatMessage[]
+  preserveScrollVersion?: number
 }>()
 
 const listRef = ref<HTMLElement | null>(null)
+const AUTO_SCROLL_THRESHOLD = 48
+let lastHandledPreserveScrollVersion = props.preserveScrollVersion ?? 0
+let preservedBottomOffset = 0
 
 function streamingText(status: ChatMessage['status']): string {
   return status === 'streaming' ? '正在整理代码变更...' : '这条回复没有生成完整内容'
 }
 
 watch(
+  () => props.preserveScrollVersion,
+  () => {
+    if (!listRef.value) return
+    preservedBottomOffset = listRef.value.scrollHeight - listRef.value.scrollTop
+  },
+)
+
+watch(
   () => props.messages.map((message) => `${message.id}:${message.content.length}:${message.status}`).join('|'),
   async () => {
+    const list = listRef.value
+    if (!list) return
+    const preserveScrollVersion = props.preserveScrollVersion ?? 0
+    const wasNearBottom =
+      list.scrollHeight - list.scrollTop - list.clientHeight <= AUTO_SCROLL_THRESHOLD
     await nextTick()
-    if (listRef.value) listRef.value.scrollTop = listRef.value.scrollHeight
+    const currentList = listRef.value
+    if (!currentList) return
+    if (preserveScrollVersion !== lastHandledPreserveScrollVersion) {
+      currentList.scrollTop = currentList.scrollHeight - preservedBottomOffset
+      lastHandledPreserveScrollVersion = preserveScrollVersion
+    } else if (wasNearBottom) {
+      currentList.scrollTop = currentList.scrollHeight
+    }
   },
 )
 </script>

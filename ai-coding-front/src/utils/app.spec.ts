@@ -101,6 +101,14 @@ describe('API base URL normalization', () => {
     expect(normalizeApiBaseUrl('http://localhost:8081/api///')).toBe('http://localhost:8081/api')
     expect(normalizeApiBaseUrl(undefined)).toBe('http://localhost:8081/api')
   })
+
+  it('resolves a relative API base against the browser origin', () => {
+    const normalizeWithOrigin = normalizeApiBaseUrl as (value: string, origin: string) => string
+
+    expect(normalizeWithOrigin('/api/', 'https://preview.example.com')).toBe(
+      'https://preview.example.com/api',
+    )
+  })
 })
 
 describe('application preview URLs', () => {

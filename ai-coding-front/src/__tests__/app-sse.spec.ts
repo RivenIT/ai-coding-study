@@ -100,6 +100,63 @@ describe('connectAppGeneration', () => {
     expect(onDone).toHaveBeenCalledTimes(1)
     expect(onError).not.toHaveBeenCalled()
   })
+
+  it('settles with an error when the stream stays inactive beyond its timeout', () => {
+    vi.useFakeTimers()
+    try {
+      const source = createMockSource()
+      const onError = vi.fn()
+
+      connectAppGeneration({
+        appId: '1',
+        message: 'hello',
+        onChunk: () => undefined,
+        onDone: () => undefined,
+        onError,
+        inactivityTimeoutMs: 1_000,
+        factory: () => source,
+      })
+
+      vi.advanceTimersByTime(1_000)
+
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect(onError.mock.calls[0][0].message).toContain('AI 生成响应超时')
+      expect(source.close).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('rejects prompts whose encoded SSE URL would exceed the transport limit', () => {
+    expect(() =>
+      connectAppGeneration({
+        appId: '1',
+        message: '中'.repeat(2_000),
+        onChunk: () => undefined,
+        onDone: () => undefined,
+        onError: () => undefined,
+        factory: () => createMockSource(),
+      }),
+    ).toThrow('提示词编码后过长')
+  })
+
+  it('closes the EventSource even when a completion callback throws', () => {
+    const source = createMockSource()
+
+    connectAppGeneration({
+      appId: '1',
+      message: 'hello',
+      onChunk: () => undefined,
+      onDone: () => {
+        throw new Error('render failed')
+      },
+      onError: () => undefined,
+      factory: () => source,
+    })
+
+    expect(() => source.emit('done')).toThrow('render failed')
+    expect(source.close).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('parseGenerationBusinessError', () => {

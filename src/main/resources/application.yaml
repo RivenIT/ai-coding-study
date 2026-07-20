@@ -1,17 +1,31 @@
-server:
-  port: 8081
-  servlet:
-    context-path: /api
-
 spring:
   application:
     name: ai-coding-study
+  # session 配置
+  session:
+    store-type: redis
+    # session 30 天过期
+    timeout: 2592000
   profiles:
     active: local
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/yu_ai_code_mother
+  data:
+    redis:
+      host: 192.168.200.139
+      port: 6379
+      password: 123456
+      ttl: 3600
 
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
 # springdoc-openapi
 springdoc:
   group-configs:
