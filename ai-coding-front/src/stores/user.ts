@@ -10,37 +10,60 @@ export const useUserStore = defineStore('user', () => {
   const loading = ref(false)
   const isAdmin = computed(() => loginUser.value?.userRole === 'admin')
   let inflightFetch: Promise<LoginUserVO | null> | null = null
+  /** 登录态变更代数：丢弃过期的 getLoginUser 响应，避免覆盖新登录结果。 */
+  let authEpoch = 0
+
+  function bumpAuthEpoch() {
+    authEpoch += 1
+    return authEpoch
+  }
 
   function clearLoginUser() {
+    bumpAuthEpoch()
+    inflightFetch = null
     loginUser.value = null
   }
 
   async function fetchLoginUser(options: { silent?: boolean } = {}) {
     if (inflightFetch) return inflightFetch
 
+    const epoch = authEpoch
     loading.value = true
-    inflightFetch = (async () => {
+    const thisFetch = (async () => {
       try {
-        loginUser.value = await userApi.getLoginUser()
+        const user = await userApi.getLoginUser()
+        if (epoch !== authEpoch) return loginUser.value
+        loginUser.value = user
+        initialized.value = true
         return loginUser.value
       } catch (error) {
+        if (epoch !== authEpoch) {
+          // 过期响应（例如登录成功后迟到的 40100）不得清掉新会话。
+          if (options.silent && error instanceof ApiError && error.code === 40100) {
+            return null
+          }
+          throw error
+        }
         if (options.silent && error instanceof ApiError && error.code === 40100) {
           clearLoginUser()
+          initialized.value = true
           return null
         }
         throw error
       } finally {
-        initialized.value = true
         loading.value = false
-        inflightFetch = null
+        if (inflightFetch === thisFetch) inflightFetch = null
       }
     })()
+    inflightFetch = thisFetch
 
-    return inflightFetch
+    return thisFetch
   }
 
   async function login(requestData: UserLoginRequest) {
     const user = await userApi.login(requestData)
+    bumpAuthEpoch()
+    inflightFetch = null
     loginUser.value = user
     initialized.value = true
     return user

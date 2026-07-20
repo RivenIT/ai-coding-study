@@ -17,6 +17,12 @@
     <div v-if="loading" class="app-grid">
       <a-skeleton v-for="item in pageSize" :key="item" active />
     </div>
+    <a-result v-else-if="errorMessage" class="error-message" status="warning" title="列表加载失败">
+      <template #subTitle>{{ errorMessage }}</template>
+      <template #extra>
+        <a-button type="primary" @click="emit('retry')">重试</a-button>
+      </template>
+    </a-result>
     <a-empty v-else-if="items.length === 0" :description="emptyText" />
     <div v-else class="app-grid">
       <AppCard
@@ -28,7 +34,6 @@
         @open="emit('open', $event)"
         @edit="emit('edit', $event)"
         @delete="emit('delete', $event)"
-        @deploy="emit('deploy', $event)"
       />
     </div>
 
@@ -64,6 +69,7 @@ const props = withDefaults(
     deletable?: boolean
     emptyText?: string
     searchPlaceholder?: string
+    errorMessage?: string
   }>(),
   {
     description: '',
@@ -72,6 +78,7 @@ const props = withDefaults(
     deletable: false,
     emptyText: '暂无应用',
     searchPlaceholder: '按名称搜索',
+    errorMessage: '',
   },
 )
 
@@ -81,7 +88,7 @@ const emit = defineEmits<{
   open: [app: AppVO]
   edit: [app: AppVO]
   delete: [app: AppVO]
-  deploy: [app: AppVO]
+  retry: []
 }>()
 
 const keyword = ref('')

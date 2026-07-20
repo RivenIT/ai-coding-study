@@ -65,7 +65,13 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'cover'">
-          <img v-if="record.cover && isHttpUrl(record.cover)" class="cover-thumb" :src="record.cover" :alt="record.appName || '应用封面'" />
+          <img
+            v-if="canShowCover(record)"
+            class="cover-thumb"
+            :src="record.cover!"
+            :alt="record.appName || '应用封面'"
+            @error="handleCoverError(record.id)"
+          />
           <span v-else>-</span>
         </template>
         <template v-else-if="column.key === 'appName'">
@@ -110,17 +116,20 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons-vue'
 import { Modal, message } from 'ant-design-vue'
 import AppDetailDrawer from '@/components/app/AppDetailDrawer.vue'
 import { deleteAppByAdmin, listAppsByAdmin, updateAppByAdmin } from '@/services/app'
+import { isAuthenticationError } from '@/services/http'
+import { useUserStore } from '@/stores/user'
 import type { AppQueryInput, AppVO } from '@/types/app'
 import { isHttpUrl, isNumericId, normalizeAdminAppQuery } from '@/utils/app'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 const apps = ref<AppVO[]>([])
 const total = ref(0)
 const loading = ref(false)
@@ -128,6 +137,7 @@ const detailOpen = ref(false)
 const selectedApp = ref<AppVO | null>(null)
 const idError = ref('')
 const userIdError = ref('')
+const failedCoverIds = ref(new Set<string>())
 let loadSeq = 0
 const query = reactive<AppQueryInput>({ pageNum: 1, pageSize: 10, sortField: 'createTime', sortOrder: 'descend' })
 const filters = reactive<{
@@ -181,20 +191,47 @@ function getRequestQuery() {
 }
 
 async function loadApps() {
-  if (!validateIds()) return
   const requestId = ++loadSeq
+  if (!validateIds()) {
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     const page = await listAppsByAdmin(getRequestQuery())
     if (requestId !== loadSeq) return
     apps.value = page.records
     total.value = page.totalRow
+    failedCoverIds.value = new Set()
   } catch (error) {
     if (requestId !== loadSeq) return
-    message.error(error instanceof Error ? error.message : '加载应用列表失败')
+    handleRequestError(error, '加载应用列表失败')
   } finally {
     if (requestId === loadSeq) loading.value = false
   }
+}
+
+function canShowCover(record: AppVO): boolean {
+  return Boolean(record.cover && isHttpUrl(record.cover) && !failedCoverIds.value.has(record.id))
+}
+
+function handleCoverError(id: string) {
+  failedCoverIds.value = new Set(failedCoverIds.value).add(id)
+}
+
+function handleRequestError(error: unknown, fallback: string): boolean {
+  if (isAuthenticationError(error)) {
+    apps.value = []
+    total.value = 0
+    selectedApp.value = null
+    detailOpen.value = false
+    userStore.clearLoginUser()
+    void router.replace({ path: '/login', query: { redirect: route.fullPath } })
+    return true
+  }
+
+  message.error(error instanceof Error ? error.message : fallback)
+  return false
 }
 
 function search() {
@@ -258,7 +295,7 @@ function markGood(record: AppVO) {
       await loadApps()
     })
     .catch((error: unknown) => {
-      message.error(error instanceof Error ? error.message : '设置精选失败')
+      handleRequestError(error, '设置精选失败')
     })
 }
 
@@ -276,14 +313,17 @@ function confirmDelete(record: AppVO) {
         message.success('删除成功')
         await loadApps()
       } catch (error) {
-        message.error(error instanceof Error ? error.message : '删除应用失败')
-        throw error
+        if (!handleRequestError(error, '删除应用失败')) throw error
       }
     },
   })
 }
 
 onMounted(() => void loadApps())
+
+onBeforeUnmount(() => {
+  loadSeq += 1
+})
 </script>
 
 <style scoped>

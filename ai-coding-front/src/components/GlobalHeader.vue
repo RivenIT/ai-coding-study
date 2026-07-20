@@ -10,7 +10,7 @@
 
         <!-- 菜单导航 -->
         <a-menu
-          v-model:selectedKeys="selectedKeys"
+          :selected-keys="selectedKeys"
           mode="horizontal"
           class="header-menu"
           :items="menuItems"
@@ -27,19 +27,20 @@
             登录
           </a-button>
         </a-space>
-        <a-dropdown v-else placement="bottomRight">
-          <a class="user-trigger" @click.prevent>
+        <a-dropdown v-else placement="bottomRight" :trigger="['click']">
+          <button class="user-trigger" type="button">
             <a-avatar :src="userStore.loginUser.userAvatar || undefined">
               <template #icon><UserOutlined /></template>
             </a-avatar>
             <span class="user-name">{{ userStore.loginUser.userName || userStore.loginUser.userAccount }}</span>
             <a-tag :color="userStore.isAdmin ? 'orange' : 'blue'">{{ userStore.isAdmin ? '管理员' : '普通用户' }}</a-tag>
             <DownOutlined />
-          </a>
+          </button>
           <template #overlay>
             <a-menu @click="handleUserMenuClick">
               <a-menu-item v-if="userStore.isAdmin" key="userManage">用户管理</a-menu-item>
               <a-menu-item v-if="userStore.isAdmin" key="appManage">应用管理</a-menu-item>
+              <a-menu-item v-if="userStore.isAdmin" key="chatHistoryManage">对话管理</a-menu-item>
               <a-menu-divider v-if="userStore.isAdmin" />
               <a-menu-item key="logout">退出登录</a-menu-item>
             </a-menu>
@@ -107,6 +108,10 @@ function handleUserMenuClick({ key }: { key: string }) {
   }
   if (key === 'appManage') {
     void router.push('/app/manage')
+    return
+  }
+  if (key === 'chatHistoryManage') {
+    void router.push('/chatHistory/manage')
     return
   }
   if (key === 'logout') {
@@ -224,8 +229,18 @@ function handleUserMenuClick({ key }: { key: string }) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  padding: 0;
   color: var(--color-ink);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.user-trigger:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .user-name {

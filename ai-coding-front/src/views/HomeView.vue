@@ -34,12 +34,13 @@
         :editable="Boolean(userStore.loginUser)"
         :deletable="Boolean(userStore.loginUser)"
         :empty-text="userStore.loginUser ? '还没有创建应用' : '登录后查看你的应用'"
+        :error-message="myLoadError"
         @search="searchMyApps"
         @page="changeMyPage"
         @open="openApp"
         @edit="editApp"
         @delete="confirmDelete"
-        @deploy="openApp"
+        @retry="loadMyApps"
       />
 
       <AppListSection
@@ -51,19 +52,20 @@
         :page="goodQuery.pageNum"
         :page-size="goodQuery.pageSize"
         empty-text="暂无精选应用"
+        :error-message="goodLoadError"
         @search="searchGoodApps"
         @page="changeGoodPage"
         @open="openApp"
         @edit="openApp"
         @delete="openApp"
-        @deploy="openApp"
+        @retry="loadGoodApps"
       />
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
 import AppListSection from '@/components/app/AppListSection.vue'
@@ -86,6 +88,8 @@ const myTotal = ref(0)
 const goodTotal = ref(0)
 const myLoading = ref(false)
 const goodLoading = ref(false)
+const myLoadError = ref('')
+const goodLoadError = ref('')
 let myLoadSeq = 0
 let goodLoadSeq = 0
 const myQuery = reactive<{ pageNum: number; pageSize: number; appName?: string }>({
@@ -122,12 +126,14 @@ async function submitPrompt() {
 }
 
 async function loadMyApps() {
+  const requestId = ++myLoadSeq
+  myLoadError.value = ''
   if (!userStore.loginUser) {
     myApps.value = []
     myTotal.value = 0
+    myLoading.value = false
     return
   }
-  const requestId = ++myLoadSeq
   myLoading.value = true
   try {
     const page = await listMyApps(normalizePublicAppQuery(myQuery))
@@ -136,6 +142,7 @@ async function loadMyApps() {
     myTotal.value = page.totalRow
   } catch (error) {
     if (requestId !== myLoadSeq) return
+    myLoadError.value = error instanceof Error ? error.message : '加载我的应用失败'
     handleError(error, '加载我的应用失败')
   } finally {
     if (requestId === myLoadSeq) myLoading.value = false
@@ -144,6 +151,7 @@ async function loadMyApps() {
 
 async function loadGoodApps() {
   const requestId = ++goodLoadSeq
+  goodLoadError.value = ''
   goodLoading.value = true
   try {
     const page = await listGoodApps(normalizePublicAppQuery(goodQuery))
@@ -152,6 +160,7 @@ async function loadGoodApps() {
     goodTotal.value = page.totalRow
   } catch (error) {
     if (requestId !== goodLoadSeq) return
+    goodLoadError.value = error instanceof Error ? error.message : '加载精选应用失败'
     handleError(error, '加载精选应用失败')
   } finally {
     if (requestId === goodLoadSeq) goodLoading.value = false
@@ -235,6 +244,11 @@ onMounted(() => {
   void loadMyApps()
   void loadGoodApps()
 })
+
+watch(
+  () => userStore.loginUser?.id,
+  () => void loadMyApps(),
+)
 </script>
 
 <style scoped>

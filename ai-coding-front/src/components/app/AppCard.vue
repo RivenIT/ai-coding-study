@@ -1,7 +1,14 @@
 <template>
   <article class="app-card">
     <div class="cover-preview">
-      <img v-if="coverUrl" :src="coverUrl" :alt="title" class="cover-image" loading="lazy" />
+      <img
+        v-if="coverUrl && !imageFailed"
+        :src="coverUrl"
+        :alt="title"
+        class="cover-image"
+        loading="lazy"
+        @error="imageFailed = true"
+      />
       <iframe
         v-else-if="previewUrl"
         :src="previewUrl"
@@ -47,14 +54,6 @@
           <template #icon><EditOutlined /></template>
         </a-button>
         <a-button
-          type="text"
-          size="small"
-          :aria-label="`部署 ${title}`"
-          @click="emit('deploy', app)"
-        >
-          <template #icon><CloudUploadOutlined /></template>
-        </a-button>
-        <a-button
           v-if="deletable"
           danger
           type="text"
@@ -70,9 +69,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
-  CloudUploadOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
@@ -96,9 +94,9 @@ const emit = defineEmits<{
   open: [app: AppVO]
   edit: [app: AppVO]
   delete: [app: AppVO]
-  deploy: [app: AppVO]
 }>()
 
+const imageFailed = ref(false)
 const title = computed(() => props.app.appName || '未命名应用')
 const coverUrl = computed(() =>
   props.app.cover && isHttpUrl(props.app.cover) ? props.app.cover : '',
@@ -118,6 +116,13 @@ const ownerName = computed(
 )
 const placeholderText = computed(() => title.value.slice(0, 2).toUpperCase())
 const createTime = computed(() => formatDate(props.app.createTime))
+
+watch(
+  () => props.app.cover,
+  () => {
+    imageFailed.value = false
+  },
+)
 
 function formatDate(value: string | null): string {
   if (!value) return '创建时间未知'

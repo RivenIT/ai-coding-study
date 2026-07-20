@@ -49,6 +49,7 @@ import { ApiError } from '@/services/http'
 import { useUserStore } from '@/stores/user'
 import type { AppVO } from '@/types/app'
 import { canEditApp, isHttpUrl, isNumericId } from '@/utils/app'
+import { getSafeRedirectPath } from '@/utils/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,10 +67,7 @@ const form = reactive({
   cover: '',
   priority: 0,
 })
-const backTarget = computed(() => {
-  const from = route.query.from
-  return typeof from === 'string' && from.startsWith('/') ? from : '/'
-})
+const backTarget = computed(() => getSafeRedirectPath(route.query.from))
 
 function resetEditState() {
   app.value = null

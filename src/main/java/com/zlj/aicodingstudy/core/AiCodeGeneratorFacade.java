@@ -1,6 +1,7 @@
 package com.zlj.aicodingstudy.core;
 
 import com.zlj.aicodingstudy.ai.AiCodeGeneratorService;
+import com.zlj.aicodingstudy.ai.AiCodeGeneratorServiceFactory;
 import com.zlj.aicodingstudy.ai.model.HtmlCodeResult;
 import com.zlj.aicodingstudy.ai.model.MultiFileCodeResult;
 import com.zlj.aicodingstudy.core.parser.CodeParserExecutor;
@@ -34,27 +35,29 @@ public class AiCodeGeneratorFacade {
      * AI 代码生成服务，负责根据用户提示词调用对应的模型生成能力。
      */
     @Resource
-    private AiCodeGeneratorService aiCodeGeneratorService;
+    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     /**
-     * 同步生成代码并将生成结果保存到本地。
+     * 同步生成代码并保存到本地文件系统。
      *
-     * <p>方法会按生成类型选择对应的 AI 生成接口，并将其结构化结果交给
-     * {@link CodeFileSaverExecutor}。保存器会继续选择与生成类型匹配的实现，最终返回
-     * 生成文件所在的目录。</p>
+     * <p>该方法首先根据应用 ID 获取对应的 AI 代码生成服务，然后按照生成类型调用相应的
+     * 代码生成方法，并将结构化结果交给文件保存执行器。当前支持单文件 HTML 和多文件两种
+     * 生成类型。</p>
      *
-     * @param userMessage 用户输入的需求描述或提示词
-     * @param codeGenTypeEnum 目标代码的生成类型，用于决定模型调用方式和保存策略
-     * @param appId 应用ID
-     *
-     * @return 本次生成内容成功保存后的目录
-     * @throws BusinessException 当生成类型为空或当前类型没有对应的处理逻辑时抛出
+     * @param userMessage 用户输入的代码生成需求或提示词
+     * @param codeGenTypeEnum 代码生成类型，用于选择生成方法和文件保存策略
+     * @param appId 应用 ID，用于获取该应用对应的 AI 代码生成服务及确定保存目录
+     * @return 生成代码成功保存后的目录
+     * @throws BusinessException 当生成类型为空或不受支持时抛出
      */
     public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum,Long appId) {
         // 在进入 switch 前校验，避免空值导致分发逻辑出现不可预期的异常。
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        //根据appId获取相应的ai服务实例
+        AiCodeGeneratorService aiCodeGeneratorService =
+                aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 // HTML 类型的模型结果可直接交由对应保存器落盘。
@@ -75,17 +78,18 @@ public class AiCodeGeneratorFacade {
     }
 
     /**
-     * 流式生成代码，并在流正常结束后保存完整结果。
+     * 流式生成代码，并在模型输出正常结束后保存完整结果。
      *
-     * <p>返回的 {@link Flux} 会将模型产生的每个文本片段立即传递给订阅方，避免客户端等待
-     * 全部代码生成完成。与此同时，内部会收集这些片段；只有上游流发出完成信号后，才会解析
-     * 汇总内容并保存文件。</p>
+     * <p>该方法根据应用 ID 获取对应的 AI 代码生成服务，再按照生成类型创建代码输出流。
+     * 返回的 {@link Flux} 会实时向订阅方发送模型生成的代码片段，同时通过
+     * {@link #processCodeStream(Flux, CodeGenTypeEnum, Long)} 收集完整内容，并在流结束后解析、
+     * 保存到本地文件系统。</p>
      *
-     * @param userMessage 用户输入的需求描述或提示词
-     * @param codeGenTypeEnum 目标代码的生成类型，用于决定流式模型调用和后续保存策略
-     * @param appId 应用ID
-     * @return 向调用方持续输出模型代码片段的响应流
-     * @throws BusinessException 当生成类型为空或当前类型没有对应的处理逻辑时抛出
+     * @param userMessage 用户输入的代码生成需求或提示词
+     * @param codeGenTypeEnum 代码生成类型，用于选择流式生成方法和后续保存策略
+     * @param appId 应用 ID，用于获取该应用对应的 AI 代码生成服务及确定保存目录
+     * @return 持续输出代码文本片段的响应流
+     * @throws BusinessException 当生成类型为空或不受支持时抛出
      */
     public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum,
                                                   Long appId) {
@@ -93,6 +97,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        AiCodeGeneratorService aiCodeGeneratorService =
+                aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 // 获取 HTML 的流式输出，并附加统一的收集、解析和保存处理。
@@ -113,20 +119,18 @@ public class AiCodeGeneratorFacade {
     }
 
     /**
-     * 为模型输出流附加收集与落盘的后处理逻辑。
+     * 为代码输出流附加内容收集、解析和文件保存处理。
      *
-     * <p>该方法不会订阅或阻塞传入的流，而是返回一个新的装饰流：每收到一个片段就在
-     * {@code doOnNext} 中追加到缓冲区；当上游正常完成时，在 {@code doOnComplete} 中将完整
-     * 文本解析为对应类型的结果对象，并调用保存器写入文件系统。原始片段仍会按原顺序继续
-     * 传递给下游订阅者。</p>
+     * <p>每收到一个代码片段，就按原始顺序追加到缓冲区；当上游流正常完成时，将汇总后的
+     * 完整文本解析成对应类型的代码结果并保存到本地。该方法不会主动订阅或阻塞原始流，
+     * 返回值仍会向下游原样传递所有代码片段。</p>
      *
-     * <p>解析或保存失败时仅记录错误日志，不向已经完成输出的客户端补发异常，以避免文件系统
-     * 后处理问题影响流式代码展示。</p>
+     * <p>如果解析或保存失败，只记录错误日志，不改变已经输出的流式响应。</p>
      *
-     * @param codeStream 上游模型返回的代码片段流
-     * @param codeGenType 当前片段对应的代码生成类型，用于选择解析器和保存器
-     * @param appId 应用ID
-     * @return 保留原始代码片段输出、且在完成时执行保存操作的流
+     * @param codeStream AI 模型输出的代码片段流
+     * @param codeGenType 代码生成类型，用于选择对应的解析器和文件保存器
+     * @param appId 应用 ID，用于确定生成代码的保存目录
+     * @return 附加了流结束后解析和保存逻辑的代码输出流
      */
     private Flux<String> processCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenType, Long appId) {
         // StringBuilder 仅服务于当前一次方法调用，用来还原被拆分发送的完整生成结果。

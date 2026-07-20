@@ -63,15 +63,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { DownloadOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons-vue'
 import { Modal, message } from 'ant-design-vue'
 import UserDetailDrawer from '@/components/user/UserDetailDrawer.vue'
 import UserFormModal from '@/components/user/UserFormModal.vue'
 import { deleteUser, listUsers } from '@/services/user'
+import { isAuthenticationError } from '@/services/http'
+import { useUserStore } from '@/stores/user'
 import type { UserQueryInput, UserRole, UserVO } from '@/types/user'
 import { buildUserCsv, isUserId, normalizeUserQuery } from '@/utils/user'
 
+const router = useRouter()
+const route = useRoute()
+const userStore = useUserStore()
 const users = ref<UserVO[]>([])
 const total = ref(0)
 const loading = ref(false)
@@ -105,12 +111,13 @@ function getRequestQuery() {
 }
 
 async function loadUsers() {
+  const requestId = ++loadSeq
   if (filters.id && !isUserId(filters.id.trim())) {
     idError.value = '用户 ID 必须是数字'
+    loading.value = false
     return
   }
   idError.value = ''
-  const requestId = ++loadSeq
   loading.value = true
   try {
     const page = await listUsers(getRequestQuery())
@@ -119,10 +126,27 @@ async function loadUsers() {
     total.value = page.totalRow
   } catch (error) {
     if (requestId !== loadSeq) return
-    message.error(error instanceof Error ? error.message : '加载用户列表失败')
+    handleRequestError(error, '加载用户列表失败')
   } finally {
     if (requestId === loadSeq) loading.value = false
   }
+}
+
+function handleRequestError(error: unknown, fallback: string): boolean {
+  if (isAuthenticationError(error)) {
+    users.value = []
+    total.value = 0
+    selectedUser.value = null
+    editingUser.value = null
+    detailOpen.value = false
+    formOpen.value = false
+    userStore.clearLoginUser()
+    void router.replace({ path: '/login', query: { redirect: route.fullPath } })
+    return true
+  }
+
+  message.error(error instanceof Error ? error.message : fallback)
+  return false
 }
 
 function search() {
@@ -199,8 +223,7 @@ function confirmDelete(user: UserVO) {
         message.success('删除成功')
         await loadUsers()
       } catch (error) {
-        message.error(error instanceof Error ? error.message : '删除用户失败')
-        throw error
+        if (!handleRequestError(error, '删除用户失败')) throw error
       }
     },
   })
@@ -211,14 +234,18 @@ function exportCurrentPage() {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `users-${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.csv`
+  anchor.download = `users-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 onMounted(() => void loadUsers())
+
+onBeforeUnmount(() => {
+  loadSeq += 1
+})
 </script>
 
 <style scoped>

@@ -30,7 +30,10 @@
         </a-button>
       </a-form>
 
-      <p class="auth-footer">已有账号？<router-link to="/login">返回登录</router-link></p>
+      <p class="auth-footer">
+        已有账号？
+        <router-link :to="{ path: '/login', query: getRedirectQuery() }">返回登录</router-link>
+      </p>
     </a-card>
   </section>
 </template>
@@ -39,10 +42,11 @@
 import { reactive, ref } from 'vue'
 import { LockOutlined, SafetyOutlined, UserOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { registerUser } from '@/services/user'
-import { validateRegistration } from '@/utils/user'
+import { getSafeRedirectPath, validateRegistration } from '@/utils/user'
 
+const route = useRoute()
 const router = useRouter()
 const submitting = ref(false)
 const submitError = ref('')
@@ -59,6 +63,11 @@ function replaceErrors(nextErrors: Record<string, string>) {
   Object.assign(errors, nextErrors)
 }
 
+function getRedirectQuery(): Record<string, string> {
+  const redirect = getSafeRedirectPath(route.query.redirect)
+  return redirect === '/' ? {} : { redirect }
+}
+
 async function handleRegister() {
   const payload = { ...form, userAccount: form.userAccount.trim() }
   const validationErrors = validateRegistration(payload)
@@ -70,7 +79,7 @@ async function handleRegister() {
   try {
     await registerUser(payload)
     message.success('注册成功，请登录')
-    await router.push({ path: '/login', query: { account: payload.userAccount } })
+    await router.push({ path: '/login', query: { account: payload.userAccount, ...getRedirectQuery() } })
   } catch (error) {
     form.userPassword = ''
     form.checkPassword = ''
