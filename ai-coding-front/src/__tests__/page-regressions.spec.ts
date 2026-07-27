@@ -22,7 +22,9 @@ const managementPages = [
 
 describe('home page data state', () => {
   it('invalidates an in-flight private-list request before checking the login state', () => {
-    const loadMyApps = home.match(/async function loadMyApps\(\)[\s\S]*?\n}\n\nasync function loadGoodApps/)
+    const loadMyApps = home.match(
+      /async function loadMyApps\(\)[\s\S]*?(?=\r?\nasync function loadGoodApps)/,
+    )
 
     expect(loadMyApps?.[0].indexOf('const requestId = ++myLoadSeq')).toBeLessThan(
       loadMyApps?.[0].indexOf('if (!userStore.loginUser)') ?? -1,
@@ -69,6 +71,13 @@ describe('preview and media fallbacks', () => {
   it('replaces failed card and management cover images with a fallback', () => {
     expect(appCard).toMatch(/@error="imageFailed = true"/)
     expect(readSource('views/AppManagementView.vue')).toMatch(/@error="handleCoverError\(record\.id\)"/)
+  })
+
+  it('keeps generated previews in an opaque-origin sandbox so scripts cannot reuse the API session', () => {
+    for (const source of [appPreview, appCard]) {
+      expect(source).toMatch(/sandbox="[^"]*allow-scripts[^"]*"/)
+      expect(source).not.toMatch(/allow-same-origin/)
+    }
   })
 })
 

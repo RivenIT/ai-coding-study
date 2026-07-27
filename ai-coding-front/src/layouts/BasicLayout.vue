@@ -41,7 +41,10 @@ const route = useRoute()
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--color-paper-soft);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-field-mist) 70%, transparent) 0, transparent 32%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-field-cyan) 18%, transparent) 0, transparent 28%),
+    var(--color-paper-soft);
 }
 
 .immersive-layout {
@@ -56,7 +59,7 @@ const route = useRoute()
   z-index: 999;
   width: 100%;
   height: 80px;
-  padding: var(--space-1) var(--space-2) 0;
+  padding: var(--space-2) var(--space-2) 0;
   line-height: normal;
   background: transparent;
 }

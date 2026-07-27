@@ -1,23 +1,24 @@
 /* Hallmark · macrostructure: Workbench · tone: clear product field · anchor hue: cyan-blue */
+/* Hallmark · pre-emit critique: P4 H4 E5 S4 R4 V4 */
 :root {
   /* Hex fallbacks for browsers without OKLCH support */
-  --color-paper: #f7fafc;
-  --color-paper-soft: #f0f5f8;
+  --color-paper: #f5f8fb;
+  --color-paper-soft: #eef4f8;
   --color-panel: #ffffff;
   --color-panel-raised: #fbfcfd;
   --color-ink: #0f1724;
   --color-muted: #5b6b7c;
-  --color-subtle: #9aa7b5;
-  --color-rule: #d7e0e8;
+  --color-subtle: #8f9eae;
+  --color-rule: #d5dee8;
   --color-field-cyan: #7fd9d2;
   --color-field-blue: #3f87d9;
   --color-field-mist: #e7f8f5;
   --color-field-stripe: rgba(255, 255, 255, 0.14);
   --color-accent: #2f8fcf;
   --color-accent-strong: #1f6fb3;
-  --color-panel-on-field: rgba(255, 255, 255, 0.76);
-  --color-rule-on-field: rgba(255, 255, 255, 0.7);
-  --color-rule-on-field-strong: rgba(255, 255, 255, 0.72);
+  --color-panel-on-field: rgba(255, 255, 255, 0.8);
+  --color-rule-on-field: rgba(255, 255, 255, 0.72);
+  --color-rule-on-field-strong: rgba(255, 255, 255, 0.78);
   --color-on-accent: #ffffff;
   --color-on-accent-muted: rgba(255, 255, 255, 0.78);
   --color-teal: #3fbfb0;
@@ -25,6 +26,8 @@
   --color-danger: #d64545;
   --color-success: #2f9f63;
   --color-focus: #2f86d6;
+  --color-chip: rgba(47, 143, 207, 0.08);
+  --color-chip-border: rgba(47, 143, 207, 0.16);
   --font-body: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: "Microsoft YaHei UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --space-1: 4px;
@@ -37,12 +40,14 @@
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
-  --shadow-panel: 0 18px 48px rgba(36, 54, 84, 0.08);
-  --shadow-card: 0 8px 24px rgba(36, 54, 84, 0.07);
-  --shadow-workbench: 0 12px 36px rgba(34, 62, 102, 0.12);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+  --shadow-panel: 0 20px 50px rgba(28, 48, 78, 0.08);
+  --shadow-card: 0 10px 28px rgba(28, 48, 78, 0.07);
+  --shadow-workbench: 0 14px 40px rgba(28, 54, 92, 0.12);
+  --shadow-header: 0 10px 30px rgba(28, 48, 78, 0.06);
   --dur-fast: 120ms;
   --dur-med: 180ms;
   --dur-slow: 280ms;
@@ -53,23 +58,23 @@
 
 @supports (color: oklch(0% 0 0)) {
   :root {
-    --color-paper: oklch(98.5% 0.006 225);
-    --color-paper-soft: oklch(96.8% 0.012 225);
+    --color-paper: oklch(97.8% 0.008 225);
+    --color-paper-soft: oklch(96% 0.014 225);
     --color-panel: oklch(100% 0 0);
     --color-panel-raised: oklch(99.4% 0.004 230);
     --color-ink: oklch(19% 0.027 250);
     --color-muted: oklch(48% 0.028 245);
-    --color-subtle: oklch(68% 0.018 245);
-    --color-rule: oklch(89% 0.012 235);
+    --color-subtle: oklch(66% 0.018 245);
+    --color-rule: oklch(88% 0.014 235);
     --color-field-cyan: oklch(83% 0.12 190);
     --color-field-blue: oklch(65% 0.16 240);
     --color-field-mist: oklch(96% 0.045 190);
     --color-field-stripe: oklch(100% 0 0 / 0.14);
     --color-accent: oklch(62% 0.15 220);
     --color-accent-strong: oklch(50% 0.16 235);
-    --color-panel-on-field: oklch(100% 0 0 / 0.76);
-    --color-rule-on-field: oklch(100% 0 0 / 0.7);
-    --color-rule-on-field-strong: oklch(100% 0 0 / 0.72);
+    --color-panel-on-field: oklch(100% 0 0 / 0.8);
+    --color-rule-on-field: oklch(100% 0 0 / 0.72);
+    --color-rule-on-field-strong: oklch(100% 0 0 / 0.78);
     --color-on-accent: oklch(100% 0 0);
     --color-on-accent-muted: oklch(100% 0 0 / 0.78);
     --color-teal: oklch(69% 0.12 185);
@@ -77,9 +82,12 @@
     --color-danger: oklch(58% 0.19 25);
     --color-success: oklch(62% 0.15 150);
     --color-focus: oklch(60% 0.17 230);
-    --shadow-panel: 0 18px 48px oklch(30% 0.05 240 / 0.08);
-    --shadow-card: 0 8px 24px oklch(30% 0.05 240 / 0.07);
-    --shadow-workbench: 0 12px 36px oklch(35% 0.08 230 / 0.12);
+    --color-chip: oklch(62% 0.15 220 / 0.08);
+    --color-chip-border: oklch(62% 0.15 220 / 0.16);
+    --shadow-panel: 0 20px 50px oklch(30% 0.05 240 / 0.08);
+    --shadow-card: 0 10px 28px oklch(30% 0.05 240 / 0.07);
+    --shadow-workbench: 0 14px 40px oklch(35% 0.08 230 / 0.12);
+    --shadow-header: 0 10px 30px oklch(30% 0.05 240 / 0.06);
   }
 }
 
@@ -92,6 +100,11 @@ body {
   color: var(--color-ink);
   font-family: var(--font-body);
   background: var(--color-paper-soft);
+}
+
+::selection {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
 }
 
 button,
@@ -109,6 +122,16 @@ select {
 .ant-btn {
   border-radius: var(--radius-sm);
   box-shadow: none;
+  font-weight: 600;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.ant-btn:not(:disabled):active {
+  transform: translateY(1px);
 }
 
 .ant-btn-primary {
@@ -119,6 +142,16 @@ select {
 .ant-btn-primary:not(:disabled):hover {
   border-color: var(--color-accent);
   background: var(--color-accent);
+}
+
+.ant-btn-default:not(:disabled):hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.ant-btn-text:not(:disabled):hover {
+  color: var(--color-accent-strong);
+  background: var(--color-chip);
 }
 
 .ant-input,
@@ -136,6 +169,16 @@ select {
   border-color: var(--color-rule) !important;
   background: var(--color-panel) !important;
   box-shadow: none !important;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out) !important;
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover,
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+.ant-input-number:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-rule)) !important;
 }
 
 .ant-input:focus,
@@ -143,6 +186,16 @@ select {
 .ant-select-focused .ant-select-selector,
 .ant-input-number-focused {
   border-color: var(--color-accent) !important;
+}
+
+.ant-input-search .ant-input-search-button {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+}
+
+/* 只统一形态；不覆盖 color/background，保留 blue/gold/green/processing 等语义色 */
+.ant-tag {
+  border-radius: var(--radius-pill);
+  font-weight: 600;
 }
 
 .ant-table-wrapper .ant-table,
@@ -161,9 +214,208 @@ select {
   border-bottom-color: var(--color-rule) !important;
 }
 
+.ant-table-tbody > tr.ant-table-row:hover > td {
+  background: color-mix(in srgb, var(--color-field-mist) 55%, white) !important;
+}
+
 .ant-modal-content,
-.ant-drawer-content {
+.ant-drawer-content,
+.ant-dropdown-menu {
   background: var(--color-panel) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-panel) !important;
+}
+
+.ant-dropdown-menu {
+  padding: var(--space-2) !important;
+  border: 1px solid var(--color-rule);
+}
+
+.ant-dropdown-menu-item {
+  border-radius: var(--radius-sm) !important;
+}
+
+.ant-pagination .ant-pagination-item-active {
+  border-color: var(--color-accent-strong) !important;
+}
+
+.ant-pagination .ant-pagination-item-active a {
+  color: var(--color-accent-strong) !important;
+}
+
+.ant-segmented {
+  background: var(--color-paper-soft) !important;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px !important;
+  padding: 2px !important;
+}
+
+.ant-segmented-item-selected {
+  border-radius: 999px !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.ant-alert {
+  border-radius: var(--radius-sm);
+}
+
+.ant-card {
+  border-radius: var(--radius-md);
+}
+
+.ant-empty-description {
+  color: var(--color-muted);
+}
+
+/* —— Shared surface utilities（页面级重复样式收敛） —— */
+.surface-card {
+  border: 1px solid color-mix(in srgb, var(--color-rule) 80%, white);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 96%, var(--color-field-mist)) 0%, var(--color-panel-raised) 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.page-header-panel {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid color-mix(in srgb, var(--color-rule) 75%, white);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, white 94%, var(--color-field-mist)) 0%, var(--color-panel-raised) 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.page-header-panel .eyebrow {
+  color: var(--color-accent-strong);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.page-header-panel h1 {
+  margin: var(--space-1) 0;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 28px;
+}
+
+.page-header-panel p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.filter-panel {
+  align-items: start;
+  padding: var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--color-rule) 80%, white);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 96%, var(--color-panel-raised)) 0%, var(--color-panel-raised) 100%);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-ink) 3%, transparent);
+}
+
+.filter-panel .ant-form-item {
+  margin-bottom: var(--space-3);
+}
+
+.table-panel {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-rule) 80%, white);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-card);
+}
+
+.management-page {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--color-muted);
+}
+
+.auth-page {
+  min-height: calc(100vh - 220px);
+  display: grid;
+  place-items: center;
+  padding: var(--space-12) 0;
+}
+
+.auth-card {
+  width: min(100%, 440px);
+  padding: var(--space-6) var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--color-rule) 80%, white);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 96%, var(--color-field-mist)) 0%, var(--color-panel-raised) 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.auth-card .auth-heading {
+  margin-bottom: var(--space-8);
+  text-align: left;
+}
+
+.auth-card .eyebrow {
+  display: inline-flex;
+  padding: 4px 10px;
+  color: var(--color-accent-strong);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-chip);
+  border: 1px solid var(--color-chip-border);
+}
+
+.auth-card .auth-heading h1 {
+  margin: var(--space-3) 0 var(--space-2);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 30px;
+}
+
+.auth-card .auth-heading p,
+.auth-card .auth-footer {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.auth-card .submit-error {
+  margin-bottom: var(--space-4);
+}
+
+.auth-card .submit-button {
+  height: 44px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+}
+
+.auth-card .auth-footer {
+  margin-top: var(--space-6);
+  text-align: center;
+}
+
+.auth-card .auth-footer a {
+  color: var(--color-accent-strong);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .page-header-panel,
+  .pagination-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,6 +1,6 @@
 <template>
   <section class="management-page">
-    <header class="page-header">
+    <header class="page-header-panel">
       <div>
         <span class="eyebrow">ADMINISTRATION</span>
         <h1>对话管理</h1>
@@ -8,7 +8,7 @@
       </div>
     </header>
 
-    <a-form class="filter-bar" layout="inline" @finish="search">
+    <a-form class="filter-panel" layout="inline" @finish="search">
       <a-form-item label="记录 ID" :validate-status="idError ? 'error' : undefined" :help="idError">
         <a-input v-model:value="filters.id" allow-clear placeholder="精确 ID" />
       </a-form-item>
@@ -39,7 +39,7 @@
     </a-form>
 
     <a-table
-      class="history-table"
+      class="history-table table-panel"
       :columns="columns"
       :data-source="records"
       :loading="loading"
@@ -220,15 +220,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.management-page { display: grid; gap: var(--space-6); }
-.page-header { display: flex; align-items: end; justify-content: space-between; gap: var(--space-6); padding-bottom: var(--space-5); border-bottom: 1px solid var(--color-rule); }
-.eyebrow { color: var(--color-accent-strong); font-size: 12px; font-weight: 800; letter-spacing: 0; }
-.page-header h1 { margin: var(--space-1) 0; color: var(--color-ink); font-family: var(--font-display); font-size: 28px; }
-.page-header p { margin: 0; color: var(--color-muted); }
-.filter-bar { align-items: start; padding: var(--space-4); border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-panel-raised); }
-.filter-bar :deep(.ant-form-item) { margin-bottom: var(--space-3); }
-.history-table { overflow: hidden; border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-panel); }
-.ellipsis { max-width: 340px; margin: 0; }
-.pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); color: var(--color-muted); }
-@media (max-width: 720px) { .page-header, .pagination-bar { align-items: flex-start; flex-direction: column; } }
+.ellipsis {
+  max-width: 340px;
+  margin: 0;
+}
 </style>

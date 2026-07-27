@@ -2,7 +2,8 @@
   <div class="global-footer">
     <div class="footer-container">
       <div class="footer-content">
-        <span class="footer-text">© 2024 AI 智能应用平台</span>
+        <span class="footer-text">© 2026 AI 智能应用平台</span>
+        <span class="footer-divider" aria-hidden="true" />
         <span class="footer-note">从想法到可用应用</span>
       </div>
     </div>
@@ -14,7 +15,7 @@
   width: 100%;
   padding: var(--space-6) 0;
   border-top: 1px solid var(--color-rule);
-  background: var(--color-paper-soft);
+  background: color-mix(in srgb, var(--color-paper-soft) 88%, white);
   margin-top: auto;
 }
 
@@ -37,6 +38,13 @@
   font-size: 14px;
   color: var(--color-muted);
   line-height: 1.6;
+}
+
+.footer-divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-subtle);
 }
 
 .footer-note {
@@ -76,6 +84,10 @@
   .footer-content {
     flex-direction: column;
     gap: var(--space-1);
+  }
+
+  .footer-divider {
+    display: none;
   }
 }
 </style>

@@ -52,9 +52,8 @@ public class StaticResourceController {
                 resourcePath = "/index.html";
             }
 
-            // 构建文件路径
-            String filePath = PREVIEW_ROOT_DIR + "/" + deployKey + resourcePath;
-            File file = new File(filePath);
+            File previewRoot = getPreviewRoot(deployKey);
+            File file = new File(previewRoot, resourcePath);
             // 检查文件是否存在
             if (!file.exists()) {
                 return ResponseEntity.notFound().build();
@@ -62,11 +61,24 @@ public class StaticResourceController {
             // 返回文件资源
             Resource resource = new FileSystemResource(file);
             return ResponseEntity.ok()
-                    .header("Content-Type", getContentTypeWithCharset(filePath))
+                    .header("Content-Type", getContentTypeWithCharset(file.getPath()))
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    /**
+     * Vue 项目的源码不能由浏览器直接运行，预览时必须读取 Vite 打包后的 dist 目录。
+     */
+    private File getPreviewRoot(String deployKey) {
+        File projectRoot = new File(PREVIEW_ROOT_DIR, deployKey);
+        if (!deployKey.startsWith("vue_project_")) {
+            return projectRoot;
+        }
+
+        File distDir = new File(projectRoot, "dist");
+        return distDir.isDirectory() ? distDir : projectRoot;
     }
 
     /**

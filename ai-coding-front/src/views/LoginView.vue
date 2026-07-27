@@ -99,15 +99,3 @@ async function handleLogin() {
 }
 </script>
 
-<style scoped>
-.auth-page { min-height: calc(100vh - 220px); display: grid; place-items: center; padding: var(--space-12) 0; }
-.auth-card { width: min(100%, 440px); padding: var(--space-4); border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-panel-raised); box-shadow: var(--shadow-card); }
-.auth-heading { margin-bottom: var(--space-8); text-align: left; }
-.eyebrow { color: var(--color-accent-strong); font-size: 12px; font-weight: 800; letter-spacing: 0; }
-.auth-heading h1 { margin: var(--space-2) 0; color: var(--color-ink); font-family: var(--font-display); font-size: 30px; }
-.auth-heading p, .auth-footer { color: var(--color-muted); margin: 0; }
-.submit-error { margin-bottom: var(--space-4); }
-.submit-button { height: 44px; border-radius: var(--radius-sm); font-weight: 700; }
-.auth-footer { margin-top: var(--space-6); text-align: center; }
-.auth-footer a { color: var(--color-accent-strong); font-weight: 700; }
-</style>

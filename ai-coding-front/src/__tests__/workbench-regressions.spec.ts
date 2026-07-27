@@ -27,6 +27,12 @@ describe('workbench regressions', () => {
     expect(messages).toMatch(/else if\s*\(wasNearBottom\)/)
   })
 
+  it('keeps an empty chat state lightweight', () => {
+    expect(messages).toMatch(/class="message-empty-text"/)
+    expect(messages).not.toMatch(/message-empty-card/)
+    expect(messages).not.toMatch(/message-empty-tips/)
+  })
+
   it('does not report a successful deployment as failed when only app refresh fails', () => {
     const deployFunction = chat.match(/async function deployCurrentApp\(\)[\s\S]*?\n}\n\nfunction openDeployUrl/)
     expect(deployFunction?.[0]).toMatch(/deployModalOpen\.value\s*=\s*true[\s\S]*try\s*\{[\s\S]*await getApp/)

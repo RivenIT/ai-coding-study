@@ -54,6 +54,40 @@ describe('AppChatView critical bugs', () => {
     expect(chat).toMatch(/watch\s*\(\s*\(\)\s*=>\s*route\.params\.id/)
     expect(edit).toMatch(/watch\s*\(\s*\(\)\s*=>\s*route\.params\.id/)
   })
+
+  it('resets loadingHistory when invalidating in-flight work so the retry button cannot deadlock history', () => {
+    const loadApp = chat.match(/async function loadApp\(\)[\s\S]*?\n}\n\nasync function consumeAutoStart/)
+
+    expect(loadApp?.[0]).toMatch(
+      /const requestId = \+\+loadSeq[\s\S]*?loadingHistory\.value = false[\s\S]*?await loadChatHistory\(/,
+    )
+  })
+
+  it('drops stale deploy responses after the workbench switches to another app', () => {
+    const deploy = chat.match(/async function deployCurrentApp\(\)[\s\S]*?\n}\n\nfunction openDeployUrl/)
+
+    expect(deploy?.[0]).toMatch(/const requestId = loadSeq/)
+    expect(deploy?.[0]).toMatch(/if \(requestId !== loadSeq\) return/)
+  })
+
+  it('invalidates in-flight edit-view requests on unmount so a stale 40100 cannot redirect to login', () => {
+    expect(edit).toMatch(/onBeforeUnmount\(\(\) => \{\s*loadSeq \+= 1/)
+  })
+
+  it('only bumps historyPrependVersion when a page actually adds messages', () => {
+    const loadHistory = chat.match(/async function loadChatHistory[\s\S]*?\n}\n\nasync function loadMoreChatHistory/)
+    const elseBranch = loadHistory?.[0].match(/else\s*\{[\s\S]*?\n\s*\}/)
+
+    expect(elseBranch?.[0]).toMatch(/if \(historyMessages\.length > 0\)[\s\S]*historyPrependVersion\.value \+= 1/)
+    expect(elseBranch?.[0]).toMatch(/messages\.value = \[\.\.\.historyMessages, \.\.\.messages\.value\]/)
+  })
+
+  it('does not treat an all-duplicate page as the end of history', () => {
+    const loadHistory = chat.match(/async function loadChatHistory[\s\S]*?\n}\n\nasync function loadMoreChatHistory/)
+
+    expect(loadHistory?.[0]).toMatch(/hasMoreHistory\.value =[\s\S]*?nextCursor !== previousCursor/)
+    expect(loadHistory?.[0]).not.toMatch(/freshRecords\.length > 0/)
+  })
 })
 
 describe('pagination double-load', () => {

@@ -47,6 +47,29 @@ public class AppController {
     private UserService userService;
 
 
+    /**
+     *
+     * @param appId
+     * @param message
+     * @param request
+     * @return
+     */
+    /**
+     * Streams an application's AI code-generation response to the browser.
+     *
+     * <p>The endpoint is consumed through {@code EventSource}. Each normal SSE message contains
+     * a JSON payload in the form {@code {"d":"chunk"}}; terminal failures are emitted as a
+     * {@code business-error} event, and a {@code done} event marks normal completion.</p>
+     *
+     * <p>Before the stream is opened, the request is validated and the current user is resolved
+     * from the HTTP session. Resource ownership, generation, persistence of chat history, and
+     * file generation are delegated to {@link AppService#chatToGenCode(Long, String, User)}.</p>
+     *
+     * @param appId application ID whose conversation and generated files are updated
+     * @param message user instruction sent to the AI model
+     * @param request HTTP request used to resolve the logged-in user from the session
+     * @return an SSE stream of generated response chunks and lifecycle events
+     */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
@@ -127,8 +150,8 @@ public class AppController {
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        // 新创建的应用暂时默认按完整 Vue 工程生成
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         // 插入数据库
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);

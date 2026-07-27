@@ -14,6 +14,15 @@
           submit-label="创建应用"
           @submit="submitPrompt"
         />
+        <a-alert
+          v-if="draftRestored"
+          class="draft-banner"
+          type="info"
+          show-icon
+          closable
+          message="已恢复你登录前填写的描述，确认后点击「创建应用」继续"
+          @close="dismissDraft"
+        />
         <div class="suggestions">
           <a-button v-for="item in suggestions" :key="item" size="small" @click="prompt = item">
             {{ item }}
@@ -56,8 +65,6 @@
         @search="searchGoodApps"
         @page="changeGoodPage"
         @open="openApp"
-        @edit="openApp"
-        @delete="openApp"
         @retry="loadGoodApps"
       />
     </section>
@@ -82,6 +89,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const prompt = ref('')
 const creating = ref(false)
+const draftRestored = ref(false)
 const myApps = ref<AppVO[]>([])
 const goodApps = ref<AppVO[]>([])
 const myTotal = ref(0)
@@ -116,6 +124,7 @@ async function submitPrompt() {
   try {
     const id = await addApp({ initPrompt })
     prompt.value = ''
+    draftRestored.value = false
     sessionStorage.removeItem(DRAFT_KEY)
     await router.push({ name: 'app-chat', params: { id }, query: { autoStart: '1' } })
   } catch (error) {
@@ -123,6 +132,12 @@ async function submitPrompt() {
   } finally {
     creating.value = false
   }
+}
+
+function dismissDraft() {
+  // 用户显式关闭提示即视为放弃恢复：清掉草稿，避免下次进入首页重复弹提示。
+  draftRestored.value = false
+  sessionStorage.removeItem(DRAFT_KEY)
 }
 
 async function loadMyApps() {
@@ -239,7 +254,8 @@ onMounted(() => {
   const draft = sessionStorage.getItem(DRAFT_KEY)
   if (draft) {
     prompt.value = draft
-    sessionStorage.removeItem(DRAFT_KEY)
+    // 保留草稿直到创建成功或用户关闭提示；用常驻 banner 提示，不再每次进入都弹 toast
+    draftRestored.value = true
   }
   void loadMyApps()
   void loadGoodApps()
@@ -259,33 +275,29 @@ watch(
 }
 
 .prompt-hero {
-  position: relative;
   min-width: 0;
-  min-height: 660px;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
-  align-content: center;
-  gap: var(--space-8);
-  padding: var(--space-16) var(--space-4) calc(var(--space-16) + var(--space-12));
-  overflow: hidden;
-  background:
-    repeating-linear-gradient(154deg, transparent 0 13px, var(--color-field-stripe) 14px 15px, transparent 16px 30px),
-    linear-gradient(153deg, var(--color-paper) 0%, var(--color-field-mist) 42%, var(--color-field-cyan) 70%, var(--color-field-blue) 100%);
+  gap: var(--space-6);
+  padding: var(--space-10) var(--space-6);
+  border-top: 2px solid var(--color-field-cyan);
+  border-bottom: 1px solid var(--color-rule);
+  background: var(--color-panel-raised);
 }
 
 .hero-copy {
-  max-width: 680px;
-  text-align: center;
-  z-index: 1;
+  width: min(100%, 880px);
+  text-align: left;
 }
 
 .hero-copy h1 {
   margin: 0;
   color: var(--color-ink);
   font-family: var(--font-display);
-  font-size: 58px;
-  line-height: 1.12;
+  font-size: 32px;
+  line-height: 1.3;
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }
@@ -293,8 +305,8 @@ watch(
 .hero-copy p {
   margin: var(--space-4) 0 0;
   color: var(--color-muted);
-  font-size: 18px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .composer-wrap {
@@ -302,12 +314,11 @@ watch(
   min-width: 0;
   display: grid;
   gap: var(--space-4);
-  z-index: 1;
 }
 
 .suggestions {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: var(--space-3);
 }
@@ -315,23 +326,28 @@ watch(
 .suggestions :deep(.ant-btn) {
   height: 34px;
   color: var(--color-muted);
-  border-color: var(--color-rule-on-field);
+  border-color: var(--color-rule);
   border-radius: var(--radius-sm);
-  background: var(--color-panel-on-field);
+  background: var(--color-panel);
+}
+
+.suggestions :deep(.ant-btn:hover) {
+  color: var(--color-accent-strong);
+  border-color: var(--color-field-blue);
+  background: var(--color-panel-raised);
 }
 
 .work-gallery {
-  position: relative;
-  z-index: 2;
   display: grid;
   gap: var(--space-12);
-  width: min(90%, 1400px);
-  margin: calc(var(--space-16) * -1) auto 0;
-  padding: var(--space-10) var(--space-8) var(--space-12);
-  border: 1px solid var(--color-rule-on-field);
-  border-radius: 24px 24px 0 0;
-  background: var(--color-panel);
-  box-shadow: var(--shadow-panel);
+  width: min(100%, 1400px);
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6) var(--space-12);
+}
+
+.draft-banner {
+  text-align: left;
+  border-radius: var(--radius-md);
 }
 
 @media (max-width: 640px) {
@@ -340,12 +356,13 @@ watch(
   }
 
   .prompt-hero {
-    min-height: 570px;
-    padding: var(--space-12) var(--space-3) calc(var(--space-12) + var(--space-8));
+    min-height: 0;
+    gap: var(--space-5);
+    padding: var(--space-8) var(--space-3);
   }
 
   .hero-copy h1 {
-    font-size: 40px;
+    font-size: 28px;
   }
 
   .hero-copy p {
@@ -353,10 +370,8 @@ watch(
   }
 
   .work-gallery {
-    width: calc(100% - var(--space-4));
-    margin-top: calc(var(--space-10) * -1);
-    padding: var(--space-6) var(--space-4) var(--space-8);
-    border-radius: 16px 16px 0 0;
+    width: 100%;
+    padding: var(--space-8) var(--space-3);
   }
 }
 </style>

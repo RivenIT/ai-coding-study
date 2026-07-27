@@ -80,9 +80,11 @@ function handleKeydown(event: KeyboardEvent) {
   min-height: 176px;
   padding: var(--space-5);
   border: 1px solid var(--color-rule-on-field-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-panel-raised);
+  border-radius: calc(var(--radius-lg) + 2px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 96%, var(--color-field-mist)) 0%, var(--color-panel-raised) 100%);
   box-shadow: var(--shadow-workbench);
+  backdrop-filter: blur(10px);
 }
 
 .prompt-input {
@@ -93,6 +95,7 @@ function handleKeydown(event: KeyboardEvent) {
   resize: none;
   border: 0;
   box-shadow: none;
+  background: transparent !important;
 }
 
 .prompt-input:focus {
@@ -116,9 +119,10 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .submit-button {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--color-accent-strong) 24%, transparent);
 }
 
 @media (max-width: 520px) {
