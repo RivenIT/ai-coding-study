@@ -10,6 +10,8 @@ export const useUserStore = defineStore('user', () => {
   const loading = ref(false)
   const isAdmin = computed(() => loginUser.value?.userRole === 'admin')
   let inflightFetch: Promise<LoginUserVO | null> | null = null
+  /** 在途请求序号：finally 中用它判断自己是否仍是最新请求，避免误复位后来者的 loading 或误清其在途标记。 */
+  let inflightSeq = 0
   /** 登录态变更代数：丢弃过期的 getLoginUser 响应，避免覆盖新登录结果。 */
   let authEpoch = 0
 
@@ -28,6 +30,8 @@ export const useUserStore = defineStore('user', () => {
     if (inflightFetch) return inflightFetch
 
     const epoch = authEpoch
+    // 以序号标识本次请求：finally 只在自己仍是最新在途请求时清理，避免误清后来者。
+    const seq = ++inflightSeq
     loading.value = true
     const thisFetch = (async () => {
       try {
@@ -51,8 +55,10 @@ export const useUserStore = defineStore('user', () => {
         }
         throw error
       } finally {
-        loading.value = false
-        if (inflightFetch === thisFetch) inflightFetch = null
+        if (seq === inflightSeq) {
+          loading.value = false
+          inflightFetch = null
+        }
       }
     })()
     inflightFetch = thisFetch

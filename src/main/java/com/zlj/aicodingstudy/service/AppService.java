@@ -2,6 +2,7 @@ package com.zlj.aicodingstudy.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.zlj.aicodingstudy.model.dto.app.AppAddRequest;
 import com.zlj.aicodingstudy.model.dto.app.AppQueryRequest;
 import com.zlj.aicodingstudy.model.entity.App;
 import com.zlj.aicodingstudy.model.entity.User;
@@ -54,4 +55,7 @@ public interface AppService extends IService<App> {
     List<AppVO> getAppVOList(List<App> appList);
 
 
+    void generateAppScreenshotAsync(Long appId, String appUrl);
+
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 }

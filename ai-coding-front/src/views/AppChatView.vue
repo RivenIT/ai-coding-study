@@ -135,7 +135,7 @@ const canEdit = computed(() => {
   })
 })
 const canOperate = computed(() => isOwner.value)
-const showPreview = computed(() => historyMessageCount.value >= 2)
+const showPreview = computed(() => generating.value || historyMessageCount.value >= 2)
 const canDeploy = computed(() =>
   Boolean(
     app.value &&
@@ -204,17 +204,20 @@ async function loadChatHistory(reset = false, requestId = loadSeq): Promise<Chat
     const lastRecord = page.records[page.records.length - 1]
     const nextCursor = lastRecord?.createTime ?? undefined
     historyCursor.value = nextCursor
+    // 整页被去重（createTime 撞秒、分页边界重叠）不代表历史到底，只要游标仍在前移就继续放开加载。
     hasMoreHistory.value =
       loadedHistoryIds.size < page.totalRow &&
       Boolean(nextCursor) &&
-      nextCursor !== previousCursor &&
-      freshRecords.length > 0
+      nextCursor !== previousCursor
     historyMessageCount.value = page.totalRow
     if (reset) {
       messages.value = historyMessages
     } else {
-      historyPrependVersion.value += 1
-      messages.value = [...historyMessages, ...messages.value]
+      // 空页不能 bump：messages 未变则列表 watcher 不触发，版本号会滞留并让下次流式输出跳到过期位置。
+      if (historyMessages.length > 0) {
+        historyPrependVersion.value += 1
+        messages.value = [...historyMessages, ...messages.value]
+      }
     }
     return historyMessages
   } catch (error) {
@@ -232,6 +235,8 @@ async function loadMoreChatHistory() {
 
 async function loadApp() {
   const requestId = ++loadSeq
+  // 旧请求已作废，其 finally 因 seq 不匹配不会复位 loading；这里兜底避免重试路径卡死。
+  loadingHistory.value = false
   const id = String(route.params.id || '')
   loadError.value = ''
   if (!isNumericId(id)) {
@@ -334,19 +339,26 @@ function refreshPreview() {
 
 async function deployCurrentApp() {
   if (!app.value || !canDeploy.value) return
+  // 部署不 bump loadSeq，只快照当前代数：应用切换后丢弃过期结果，不弹窗、不覆盖状态。
+  const requestId = loadSeq
   deploying.value = true
   try {
-    deployUrl.value = await deployApp(app.value.id)
+    const url = await deployApp(app.value.id)
+    if (requestId !== loadSeq) return
+    deployUrl.value = url
     deployModalOpen.value = true
     try {
-      app.value = await getApp(app.value.id)
+      const nextApp = await getApp(app.value.id)
+      if (requestId !== loadSeq) return
+      app.value = nextApp
     } catch {
-      message.warning('部署已成功，但应用信息刷新失败')
+      if (requestId === loadSeq) message.warning('部署已成功，但应用信息刷新失败')
     }
   } catch (error) {
+    if (requestId !== loadSeq) return
     message.error(error instanceof Error ? error.message : '部署失败')
   } finally {
-    deploying.value = false
+    if (requestId === loadSeq) deploying.value = false
   }
 }
 
@@ -410,7 +422,9 @@ onBeforeUnmount(() => {
   gap: var(--space-4);
   padding: 0 var(--space-4);
   border-bottom: 1px solid var(--color-rule);
-  background: var(--color-panel-raised);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 92%, var(--color-panel-raised)) 0%, var(--color-panel-raised) 100%);
+  box-shadow: var(--shadow-header);
 }
 
 .app-title {
@@ -458,7 +472,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-lg);
-  background: var(--color-panel-raised);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 96%, var(--color-field-mist)) 0%, var(--color-panel-raised) 120px);
   box-shadow: var(--shadow-workbench);
 }
 

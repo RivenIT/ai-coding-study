@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
+import com.zlj.aicodingstudy.ai.AiCodeGenTypeRoutingService;
 import com.zlj.aicodingstudy.annotation.AuthCheck;
 import com.zlj.aicodingstudy.common.BaseResponse;
 import com.zlj.aicodingstudy.common.DeleteRequest;
@@ -46,7 +47,33 @@ public class AppController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private AiCodeGenTypeRoutingService  aiCodeGenTypeRoutingService;
 
+
+    /**
+     *
+     * @param appId
+     * @param message
+     * @param request
+     * @return
+     */
+    /**
+     * Streams an application's AI code-generation response to the browser.
+     *
+     * <p>The endpoint is consumed through {@code EventSource}. Each normal SSE message contains
+     * a JSON payload in the form {@code {"d":"chunk"}}; terminal failures are emitted as a
+     * {@code business-error} event, and a {@code done} event marks normal completion.</p>
+     *
+     * <p>Before the stream is opened, the request is validated and the current user is resolved
+     * from the HTTP session. Resource ownership, generation, persistence of chat history, and
+     * file generation are delegated to {@link AppService#chatToGenCode(Long, String, User)}.</p>
+     *
+     * @param appId application ID whose conversation and generated files are updated
+     * @param message user instruction sent to the AI model
+     * @param request HTTP request used to resolve the logged-in user from the session
+     * @return an SSE stream of generated response chunks and lifecycle events
+     */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
@@ -116,23 +143,10 @@ public class AppController {
     @PostMapping("/add")
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
-        // 参数校验
-        String initPrompt = appAddRequest.getInitPrompt();
-        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
-        // 构造入库对象
-        App app = new App();
-        BeanUtil.copyProperties(appAddRequest, app);
-        app.setUserId(loginUser.getId());
-        // 应用名称暂时为 initPrompt 前 12 位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
-        // 插入数据库
-        boolean result = appService.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(app.getId());
+        Long appId = appService.createApp(appAddRequest, loginUser);
+        return ResultUtils.success(appId);
     }
 
     /**

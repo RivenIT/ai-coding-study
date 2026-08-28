@@ -142,9 +142,13 @@ function handleUserMenuClick({ key }: { key: string }) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-md);
-  background: var(--color-panel-raised);
+  gap: var(--space-3);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-rule) 80%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-panel-raised) 88%, white);
+  box-shadow: var(--shadow-header);
+  backdrop-filter: blur(14px);
 }
 
 .header-left {
@@ -152,14 +156,21 @@ function handleUserMenuClick({ key }: { key: string }) {
   align-items: center;
   min-width: 0;
   gap: var(--space-8);
-  flex: 1;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .logo-section {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: var(--space-2);
   text-decoration: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.logo-section:hover {
+  opacity: 0.88;
 }
 
 .logo-image {
@@ -178,11 +189,16 @@ function handleUserMenuClick({ key }: { key: string }) {
 
 .header-menu {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 auto;
+  overflow: hidden;
   border: none;
   background: transparent;
   font-family: var(--font-body);
   font-size: 14px;
+}
+
+.header-menu :deep(.ant-menu-overflow) {
+  min-width: 0;
 }
 
 .header-menu :deep(.ant-menu-item) {
@@ -190,28 +206,32 @@ function handleUserMenuClick({ key }: { key: string }) {
   margin: 0 var(--space-1);
   font-weight: 600;
   color: var(--color-muted);
-  transition: color var(--dur-fast) var(--ease-out);
+  border-radius: 999px;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
 }
 
 .header-menu :deep(.ant-menu-item:hover) {
   color: var(--color-ink);
-  background: transparent;
+  background: var(--color-chip);
 }
 
 .header-menu :deep(.ant-menu-item-selected) {
   color: var(--color-accent-strong);
-  background: transparent;
+  background: var(--color-chip);
   font-weight: 700;
 }
 
 .header-menu :deep(.ant-menu-item::after) {
   right: var(--space-4);
   left: var(--space-4);
-  border-bottom-color: var(--color-accent-strong);
+  border-bottom-color: transparent;
 }
 
 .header-right {
   min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -220,7 +240,7 @@ function handleUserMenuClick({ key }: { key: string }) {
 .login-button {
   height: 34px;
   padding: 0 var(--space-4);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 700;
 }
@@ -229,13 +249,23 @@ function handleUserMenuClick({ key }: { key: string }) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0;
+  min-height: 40px;
+  padding: 2px 10px 2px 2px;
   color: var(--color-ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  border: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
   background: transparent;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.user-trigger:hover {
+  border-color: var(--color-rule);
+  background: var(--color-panel);
 }
 
 .user-trigger:focus-visible {
@@ -250,6 +280,21 @@ function handleUserMenuClick({ key }: { key: string }) {
   white-space: nowrap;
 }
 
+/* 中等宽度：先收标题与角色标签，给菜单/操作区腾空间 */
+@media (max-width: 960px) {
+  .header-left {
+    gap: var(--space-4);
+  }
+
+  .site-title {
+    display: none;
+  }
+
+  .user-trigger :deep(.ant-tag) {
+    display: none;
+  }
+}
+
 /* 响应式布局 */
 @media (max-width: 768px) {
   .header-container {
@@ -257,11 +302,7 @@ function handleUserMenuClick({ key }: { key: string }) {
   }
 
   .header-left {
-    gap: var(--space-4);
-  }
-
-  .site-title {
-    display: none;
+    gap: var(--space-3);
   }
 
   .logo-image {
@@ -277,9 +318,19 @@ function handleUserMenuClick({ key }: { key: string }) {
     padding: 0 var(--space-3);
   }
 
+  /* 注册按钮保留入口，窄屏只压缩尺寸 */
+  .header-right :deep(.ant-btn-text) {
+    padding: 0 var(--space-2);
+    font-size: 13px;
+  }
+
   .login-button {
     padding: 0 var(--space-3);
     font-size: 13px;
+  }
+
+  .user-name {
+    max-width: 72px;
   }
 }
 
@@ -289,7 +340,7 @@ function handleUserMenuClick({ key }: { key: string }) {
   }
 
   .header-left {
-    gap: var(--space-3);
+    gap: var(--space-2);
   }
 
   .header-menu :deep(.ant-menu-item) {
@@ -305,8 +356,8 @@ function handleUserMenuClick({ key }: { key: string }) {
     display: none;
   }
 
-  .user-trigger :deep(.ant-tag) {
-    display: none;
+  .user-trigger {
+    padding: 2px;
   }
 }
 </style>

@@ -83,3 +83,6 @@ ai-coding-front/coverage/
 Thumbs.db
 # Added by code-review-graph
 .code-review-graph/
+
+# Playwright MCP local artifacts
+/.playwright-mcp/

@@ -1,6 +1,6 @@
 <template>
   <main class="edit-page">
-    <header class="page-header">
+    <header class="page-header-panel">
       <div>
         <span class="eyebrow">APPLICATION</span>
         <h1>应用信息修改</h1>
@@ -16,7 +16,7 @@
         </template>
       </a-result>
 
-      <a-form v-else class="edit-form" layout="vertical" @finish="save">
+      <a-form v-else class="edit-form surface-card" layout="vertical" @finish="save">
         <a-form-item label="应用名称" required :validate-status="nameError ? 'error' : undefined" :help="nameError">
           <a-input v-model:value="form.appName" :maxlength="128" show-count placeholder="请输入应用名称" />
         </a-form-item>
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getApp, getAppByAdmin, updateApp, updateAppByAdmin } from '@/services/app'
@@ -177,6 +177,9 @@ watch(
   },
   { immediate: true },
 )
+onBeforeUnmount(() => {
+  loadSeq += 1
+})
 </script>
 
 <style scoped>
@@ -186,40 +189,9 @@ watch(
   max-width: 900px;
 }
 
-.page-header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: var(--space-6);
-  padding-bottom: var(--space-5);
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.eyebrow {
-  color: var(--color-accent-strong);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.page-header h1 {
-  margin: var(--space-1) 0;
-  color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: 28px;
-}
-
-.page-header p {
-  margin: 0;
-  color: var(--color-muted);
-}
-
 .edit-form {
   max-width: 760px;
   padding: var(--space-8);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-md);
-  background: var(--color-panel-raised);
 }
 
 .priority-tip {
@@ -227,11 +199,6 @@ watch(
 }
 
 @media (max-width: 640px) {
-  .page-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .edit-form {
     padding: var(--space-4);
   }

@@ -1,5 +1,8 @@
 <template>
   <div ref="listRef" class="message-list">
+    <div v-if="messages.length === 0" class="message-empty" role="status">
+      <p class="message-empty-text">暂无对话</p>
+    </div>
     <div
       v-for="message in messages"
       :key="message.id"
@@ -98,14 +101,22 @@ watch(
   min-width: 0;
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-rule);
-  border-radius: var(--radius-sm);
+  border-radius: 18px;
   background: var(--color-panel);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-ink) 4%, transparent);
 }
 
 .is-user .message-bubble {
   color: var(--color-on-accent);
-  border-color: var(--color-accent-strong);
-  background: var(--color-accent-strong);
+  border-color: transparent;
+  border-bottom-right-radius: 6px;
+  background:
+    linear-gradient(145deg, var(--color-accent) 0%, var(--color-accent-strong) 100%);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--color-accent-strong) 22%, transparent);
+}
+
+.is-assistant .message-bubble {
+  border-bottom-left-radius: 6px;
 }
 
 .message-role {
@@ -135,6 +146,20 @@ watch(
   color: var(--color-on-accent-muted);
 }
 
+.message-empty {
+  display: grid;
+  place-items: center;
+  min-height: min(100%, 360px);
+  padding: var(--space-6) var(--space-3);
+  color: var(--color-muted);
+}
+
+.message-empty-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 @media (max-width: 560px) {
   .message-list {
     padding: var(--space-3);
@@ -142,6 +167,11 @@ watch(
 
   .message-bubble {
     max-width: 88%;
+  }
+
+  .message-empty {
+    min-height: 280px;
+    padding: var(--space-4) var(--space-2);
   }
 }
 </style>

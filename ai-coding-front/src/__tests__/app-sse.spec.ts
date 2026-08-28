@@ -74,8 +74,8 @@ describe('connectAppGeneration', () => {
     source.emit('done', '{}')
 
     expect(onError).toHaveBeenCalledTimes(1)
-    expect(onError.mock.calls[0][0]).toBeInstanceOf(Error)
-    expect(onError.mock.calls[0][0].message).toBe('无权限访问该应用')
+    expect(onError.mock.calls[0]?.[0]).toBeInstanceOf(Error)
+    expect(onError.mock.calls[0]?.[0].message).toBe('无权限访问该应用')
     expect(onDone).not.toHaveBeenCalled()
     expect(source.close).toHaveBeenCalledTimes(1)
   })
@@ -120,7 +120,7 @@ describe('connectAppGeneration', () => {
       vi.advanceTimersByTime(1_000)
 
       expect(onError).toHaveBeenCalledTimes(1)
-      expect(onError.mock.calls[0][0].message).toContain('AI 生成响应超时')
+      expect(onError.mock.calls[0]?.[0].message).toContain('AI 生成响应超时')
       expect(source.close).toHaveBeenCalledTimes(1)
     } finally {
       vi.useRealTimers()

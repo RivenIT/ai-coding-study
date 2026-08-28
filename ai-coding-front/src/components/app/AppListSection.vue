@@ -133,6 +133,11 @@ function changePage(page: number, pageSize: number) {
   width: min(100%, 280px);
 }
 
+.section-search :deep(.ant-input-affix-wrapper),
+.section-search :deep(.ant-input) {
+  background: color-mix(in srgb, var(--color-panel-raised) 70%, white) !important;
+}
+
 .app-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
@@ -145,7 +150,7 @@ function changePage(page: number, pageSize: number) {
   justify-content: space-between;
   gap: var(--space-4);
   color: var(--color-muted);
-  padding-top: var(--space-2);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--color-rule);
 }
 

@@ -31,7 +31,7 @@
         class="preview-frame"
         :src="safeUrl"
         title="应用预览"
-        sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
+        sandbox="allow-scripts allow-forms allow-modals allow-popups"
         @load="handleFrameLoad"
         @error="failPreview"
       />
@@ -181,7 +181,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-lg);
-  background: var(--color-panel-raised);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 94%, var(--color-panel-raised)) 0%, var(--color-panel-raised) 100%);
   box-shadow: var(--shadow-workbench);
 }
 
@@ -192,6 +193,7 @@ onBeforeUnmount(() => {
   gap: var(--space-4);
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-rule);
+  background: color-mix(in srgb, var(--color-panel) 70%, var(--color-panel-raised));
 }
 
 .preview-toolbar h2 {

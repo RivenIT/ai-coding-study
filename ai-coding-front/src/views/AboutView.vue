@@ -63,8 +63,11 @@
 .about-header {
   margin-bottom: var(--space-10);
   padding: var(--space-10) var(--space-8);
-  border-bottom: 1px solid var(--color-rule);
-  background: var(--color-panel-raised);
+  border: 1px solid color-mix(in srgb, var(--color-rule) 75%, white);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, white 90%, var(--color-field-mist)) 0%, var(--color-panel-raised) 100%);
+  box-shadow: var(--shadow-card);
 }
 
 .about-title {
@@ -93,6 +96,15 @@
   border-radius: var(--radius-md);
   background: var(--color-panel);
   overflow: hidden;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-ink) 4%, transparent);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
 }
 
 .info-card :deep(.ant-card-head) {

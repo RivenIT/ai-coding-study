@@ -1,5 +1,5 @@
 <template>
-  <section class="not-found-page">
+  <section class="not-found-page surface-card">
     <a-result status="404" title="页面不存在">
       <template #extra>
         <a-button type="primary" @click="router.replace('/')">返回首页</a-button>
@@ -19,5 +19,6 @@ const router = useRouter()
   display: grid;
   min-height: min(520px, calc(100vh - 220px));
   place-items: center;
+  padding: var(--space-8);
 }
 </style>

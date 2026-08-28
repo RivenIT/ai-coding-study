@@ -1,6 +1,6 @@
 <template>
   <article class="app-card">
-    <div class="cover-preview">
+    <div ref="coverRef" class="cover-preview">
       <img
         v-if="coverUrl && !imageFailed"
         :src="coverUrl"
@@ -10,12 +10,12 @@
         @error="imageFailed = true"
       />
       <iframe
-        v-else-if="previewUrl"
+        v-else-if="previewUrl && loadPreview"
         :src="previewUrl"
         :title="`${title}预览`"
         class="cover-preview-frame"
         loading="lazy"
-        sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
+        sandbox="allow-scripts allow-forms allow-modals allow-popups"
         tabindex="-1"
         aria-hidden="true"
       />
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -77,6 +77,7 @@ import {
 } from '@ant-design/icons-vue'
 import type { AppVO } from '@/types/app'
 import { buildPreviewUrl, isHttpUrl } from '@/utils/app'
+import { canObservePreviewVisibility, observePreviewVisibility } from './previewVisibility'
 
 const props = withDefaults(
   defineProps<{
@@ -96,7 +97,13 @@ const emit = defineEmits<{
   delete: [app: AppVO]
 }>()
 
+const coverRef = ref<HTMLElement | null>(null)
 const imageFailed = ref(false)
+/** 视口附近才挂载 iframe；SSR / 无 IntersectionObserver 时直接加载 */
+const canLazyPreview = canObservePreviewVisibility()
+const loadPreview = ref(!canLazyPreview)
+let stopPreviewObservation: (() => void) | null = null
+
 const title = computed(() => props.app.appName || '未命名应用')
 const coverUrl = computed(() =>
   props.app.cover && isHttpUrl(props.app.cover) ? props.app.cover : '',
@@ -124,6 +131,45 @@ watch(
   },
 )
 
+watch(previewUrl, (url) => {
+  if (!url) {
+    loadPreview.value = false
+    disconnectPreviewObserver()
+    return
+  }
+  // 已加载过则保持；URL 变化时重新观察
+  if (loadPreview.value) return
+  observePreview()
+})
+
+function disconnectPreviewObserver() {
+  stopPreviewObservation?.()
+  stopPreviewObservation = null
+}
+
+function observePreview() {
+  disconnectPreviewObserver()
+  if (!previewUrl.value || loadPreview.value) return
+
+  if (!canLazyPreview) {
+    loadPreview.value = true
+    return
+  }
+
+  stopPreviewObservation = observePreviewVisibility(coverRef.value, () => {
+    loadPreview.value = true
+    disconnectPreviewObserver()
+  })
+}
+
+onMounted(() => {
+  if (previewUrl.value) observePreview()
+})
+
+onBeforeUnmount(() => {
+  disconnectPreviewObserver()
+})
+
 function formatDate(value: string | null): string {
   if (!value) return '创建时间未知'
   return value.replace('T', ' ').slice(0, 16)
@@ -135,18 +181,22 @@ function formatDate(value: string | null): string {
   min-width: 0;
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-2);
+  padding: var(--space-3);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-md);
-  background: var(--color-panel);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 92%, var(--color-panel-raised)) 0%, var(--color-panel) 100%);
+  box-shadow: 0 1px 0 color-mix(in srgb, white 70%, transparent) inset;
   transition:
     border-color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .app-card:hover {
-  border-color: var(--color-accent);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-rule));
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
 }
 
 .cover-preview {
@@ -154,8 +204,10 @@ function formatDate(value: string | null): string {
   width: 100%;
   aspect-ratio: 16 / 10;
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-rule) 70%, white);
   border-radius: var(--radius-sm);
-  background: var(--color-panel-raised);
+  background:
+    linear-gradient(145deg, var(--color-panel-raised), color-mix(in srgb, var(--color-field-mist) 55%, white));
 }
 
 .cover-preview:hover .cover-image,
@@ -202,13 +254,22 @@ function formatDate(value: string | null): string {
   display: grid;
   place-items: center;
   color: var(--color-accent-strong);
-  background: var(--color-paper-soft);
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, white 70%, transparent), transparent 40%),
+    linear-gradient(145deg, var(--color-panel-raised), color-mix(in srgb, var(--color-field-mist) 70%, white));
 }
 
 .cover-placeholder span {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 800;
+  background: color-mix(in srgb, white 78%, var(--color-field-mist));
+  box-shadow: var(--shadow-card);
 }
 
 .card-body {
