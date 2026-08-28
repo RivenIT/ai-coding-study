@@ -136,16 +136,19 @@ public class UserController {
 
     /**
      * 根据 id 获取用户脱敏包装类
-     * <p>返回脱敏后的 UserVO，适用于非管理员场景</p>
+     * <p>返回脱敏后的 UserVO，适用于非管理员场景；要求已登录</p>
      *
      * @param id 用户 id，必须大于 0
      * @return 脱敏后的用户信息
      */
     @GetMapping("/get/vo")
+    @AuthCheck
     public BaseResponse<UserVO> getUserVOById(long id) {
-        // 先获取完整用户信息（内部已做权限和参数校验）
-        BaseResponse<User> response = getUserById(id);
-        User user = response.getData();
+        ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
+        // 直接走 Service 查询；不能内部调用 this.getUserById —— 自调用不经过 AOP 代理，
+        // 会导致 getUserById 上的 @AuthCheck(ADMIN_ROLE) 被绕过
+        User user = userService.getById(id);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR, "用户不存在");
         // 转换为脱敏视图对象
         return ResultUtils.success(userService.getUserVO(user));
     }

@@ -16,6 +16,8 @@ import com.zlj.aicodingstudy.model.vo.LoginUserVO;
 import com.zlj.aicodingstudy.model.vo.UserVO;
 import com.zlj.aicodingstudy.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -28,6 +30,16 @@ import static com.zlj.aicodingstudy.constant.UserConstant.USER_LOGIN_STATE;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+
+    /**
+     * BCrypt 哈希前缀（如 $2a$），用于区分新口令与旧 MD5 口令
+     */
+    private static final String BCRYPT_PREFIX = "$2";
+
+    /**
+     * BCrypt 加密器：自带随机盐，无需额外配置
+     */
+    private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
     /**
      * 用户注册
@@ -52,7 +64,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!userPassword.equals(checkPassword)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"两次输入密码不一致");
         }
-        //2.查询用户是否存在
+        //2.查询用户是否存在（快速失败；并发安全最终由 userAccount 唯一索引保证）
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("userAccount",userAccount);
         long count = this.mapper.selectCountByQuery(queryWrapper);
@@ -68,9 +80,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUserPassword(encryptPassword);
         user.setUserName(userAccount);
         user.setUserRole(UserRoleEnum.USER.getValue());
-        boolean result =this.save(user);
-        if (!result){
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"注册失败,数据库错误");
+        try {
+            boolean result = this.save(user);
+            if (!result) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败,数据库错误");
+            }
+        } catch (DuplicateKeyException e) {
+            // 并发注册同一账号：唯一索引兜底
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户已存在");
         }
         return user.getId();
     }
@@ -108,16 +125,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"密码过短");
         }
-        //2.加密密码
-        String encryptPassword = getEncryptPassword(userPassword);
-        //3.查询用户是否存在
+        //2.按账号查询用户（BCrypt 每次哈希不同，无法参与 SQL 等值查询，只能取出后比对）
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("userAccount",userAccount);
-        queryWrapper.eq("userPassword",encryptPassword);
         User user = this.mapper.selectOneByQuery(queryWrapper);
-        if (user==null)
-        {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户不存在");
+        if (user == null || StrUtil.isBlank(user.getUserPassword())) {
+            // 账号不存在与密码错误返回同一信息，避免账号被枚举
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码错误");
+        }
+        //3.校验密码：BCrypt 新口令直接比对；旧 MD5 口令比对通过后即时升级为 BCrypt
+        String storedPassword = user.getUserPassword();
+        if (storedPassword.startsWith(BCRYPT_PREFIX)) {
+            if (!PASSWORD_ENCODER.matches(userPassword, storedPassword)) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码错误");
+            }
+        } else if (getLegacyEncryptPassword(userPassword).equals(storedPassword)) {
+            user.setUserPassword(getEncryptPassword(userPassword));
+            this.updateById(user);
+        } else {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码错误");
         }
         // 4. 如果用户存在，记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
@@ -151,12 +177,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
-     * 获取加密密码
+     * 获取加密密码（BCrypt，自带随机盐）
      * @param userPassword 密码
      * @return  加密后的密码
      */
     public String getEncryptPassword(String userPassword) {
-        // 盐值，混淆密码
+        return PASSWORD_ENCODER.encode(userPassword);
+    }
+
+    /**
+     * 旧版 MD5+固定盐口令，仅供存量密码登录校验与迁移使用，新密码禁止走此路径
+     * @param userPassword 密码
+     * @return  MD5 哈希
+     */
+    private String getLegacyEncryptPassword(String userPassword) {
         final String SALT = "zlj";
         return DigestUtils.md5DigestAsHex((userPassword + SALT).getBytes(StandardCharsets.UTF_8));
     }
